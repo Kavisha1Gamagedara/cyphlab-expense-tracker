@@ -353,6 +353,73 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   letterSpacing: -0.5,
                                 ),
                               ),
+
+                              // Optional Budget Target Progress Indicator
+                              if (provider.currentMonthBudget != null && provider.currentMonthBudget! > 0) ...[
+                                const SizedBox(height: 10),
+                                Builder(
+                                  builder: (context) {
+                                    final budget = provider.currentMonthBudget!;
+                                    final spent = provider.selectedMonthTotal;
+                                    final ratio = (spent / budget).clamp(0.0, 1.0);
+                                    final isOver = spent > budget;
+                                    final isWarn = !isOver && (spent / budget) >= 0.8;
+
+                                    return Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(4),
+                                          child: Stack(
+                                            children: [
+                                              Container(
+                                                height: 6,
+                                                width: double.infinity,
+                                                color: Colors.white.withValues(alpha: 0.25),
+                                              ),
+                                              FractionallySizedBox(
+                                                widthFactor: ratio,
+                                                child: Container(
+                                                  height: 6,
+                                                  color: isOver
+                                                      ? Colors.redAccent
+                                                      : (isWarn ? Colors.amberAccent : Colors.white),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 5),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              isOver
+                                                  ? '⚠️ Budget exceeded by ${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(spent - budget)}'
+                                                  : (isWarn
+                                                      ? '⚠️ 80%+ of limit reached'
+                                                      : '${(spent / budget * 100).toStringAsFixed(0)}% of ${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(budget)} limit'),
+                                              style: TextStyle(
+                                                color: isOver ? Colors.redAccent.shade100 : Colors.white.withValues(alpha: 0.9),
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            if (!isOver)
+                                              Text(
+                                                '${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(budget - spent)} left',
+                                                style: TextStyle(
+                                                  color: Colors.white.withValues(alpha: 0.8),
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ],
                               const SizedBox(height: 16),
 
                               // Bottom Controls: Quick Previous/Next Month & Active Date Filter Chip
