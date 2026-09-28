@@ -65,23 +65,27 @@ class ExpenseProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      debugPrint('[ExpenseProvider] Subscribing to getExpensesStream...');
       _expenseSubscription?.cancel();
       _expenseSubscription = _firebaseService.getExpensesStream().listen(
         (expensesList) {
+          debugPrint('[ExpenseProvider] Received ${expensesList.length} expenses from Firestore');
           _expenses = expensesList;
           _isLoading = false;
           _errorMessage = null;
           notifyListeners();
         },
         onError: (error) {
+          debugPrint('[ExpenseProvider] Stream error: $error');
           _isLoading = false;
           _errorMessage = error.toString();
           notifyListeners();
         },
       );
     } catch (e) {
+      debugPrint('[ExpenseProvider] Exception during startListening: $e');
       _isLoading = false;
-      _errorMessage = 'Firebase not yet configured: $e';
+      _errorMessage = 'Firebase error: $e';
       notifyListeners();
     }
   }

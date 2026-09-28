@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'core/constants.dart';
-import 'core/theme.dart';
 import 'firebase_options.dart';
 import 'presentation/screens/dashboard_screen.dart';
 import 'presentation/state/expense_provider.dart';
@@ -31,8 +30,8 @@ class MyApp extends StatelessWidget {
           return MaterialApp(
             title: AppConstants.appName,
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
+            theme: themeProvider.lightTheme,
+            darkTheme: themeProvider.darkTheme,
             themeMode: themeProvider.themeMode,
             home: const DashboardScreen(),
           );

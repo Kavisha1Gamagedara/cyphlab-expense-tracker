@@ -33,15 +33,13 @@ class EmptyState extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.primaryLight.withValues(alpha: 0.15)
-                    : AppColors.primary.withValues(alpha: 0.08),
+                color: theme.colorScheme.primary.withValues(alpha: isDark ? 0.2 : 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
                 size: 56,
-                color: isDark ? AppColors.primaryLight : AppColors.primary,
+                color: theme.colorScheme.primary,
               ),
             ),
             const SizedBox(height: 24),
@@ -68,7 +66,8 @@ class EmptyState extends StatelessWidget {
                 icon: const Icon(Icons.add_rounded, size: 20),
                 label: Text(actionLabel!),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

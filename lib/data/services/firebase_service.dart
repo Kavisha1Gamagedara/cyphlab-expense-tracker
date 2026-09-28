@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../../core/constants.dart';
 import '../models/expense_model.dart';
 
@@ -7,7 +8,13 @@ class FirebaseService {
   final FirebaseFirestore _firestore;
 
   FirebaseService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+      : _firestore = firestore ?? FirebaseFirestore.instance {
+    // Explicitly configure settings for mobile reliability
+    _firestore.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    );
+  }
 
   CollectionReference<Map<String, dynamic>> get _collection =>
       _firestore.collection(AppConstants.expensesCollection);
@@ -25,9 +32,14 @@ class FirebaseService {
   /// Add a new expense document to Firestore
   Future<String> addExpense(Expense expense) async {
     try {
-      final docRef = await _collection.add(expense.toMap());
+      debugPrint('[FirebaseService] Adding expense: ${expense.toMap()}');
+      final docRef = await _collection
+          .add(expense.toMap())
+          .timeout(const Duration(seconds: 15));
+      debugPrint('[FirebaseService] Added expense successfully with id: ${docRef.id}');
       return docRef.id;
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('[FirebaseService] Error adding expense: $e\n$stack');
       throw Exception('Failed to add expense: $e');
     }
   }

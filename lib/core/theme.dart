@@ -1,17 +1,68 @@
 import 'package:flutter/material.dart';
 import 'constants.dart';
 
-/// App theme configuration handling Light and Dark themes.
+/// Predefined Google Pixel / Material You accent colors
+class PixelThemeColor {
+  final String name;
+  final Color primaryColor;
+  final Color secondaryColor;
+
+  const PixelThemeColor({
+    required this.name,
+    required this.primaryColor,
+    required this.secondaryColor,
+  });
+}
+
+/// App theme configuration handling Light and Dark themes with customizable Pixel palette seeds.
 class AppTheme {
-  /// Light Theme Definition
-  static ThemeData get lightTheme {
+  /// Curated Google Pixel / Material You tonal color palettes
+  static const List<PixelThemeColor> pixelPalettes = [
+    PixelThemeColor(
+      name: 'Pixel Indigo',
+      primaryColor: Color(0xFF4F46E5),
+      secondaryColor: Color(0xFF06B6D4),
+    ),
+    PixelThemeColor(
+      name: 'Bay Blue',
+      primaryColor: Color(0xFF1A73E8),
+      secondaryColor: Color(0xFF8AB4F8),
+    ),
+    PixelThemeColor(
+      name: 'Lemongrass',
+      primaryColor: Color(0xFF5B7E1B),
+      secondaryColor: Color(0xFFC4E781),
+    ),
+    PixelThemeColor(
+      name: 'Coral Rose',
+      primaryColor: Color(0xFFE25C4D),
+      secondaryColor: Color(0xFFFFB4A9),
+    ),
+    PixelThemeColor(
+      name: 'Sage Mint',
+      primaryColor: Color(0xFF2E6B56),
+      secondaryColor: Color(0xFF7DD3B2),
+    ),
+    PixelThemeColor(
+      name: 'Hazel Bronze',
+      primaryColor: Color(0xFF7D6026),
+      secondaryColor: Color(0xFFE7C480),
+    ),
+    PixelThemeColor(
+      name: 'Orchid Purple',
+      primaryColor: Color(0xFF7B3FA0),
+      secondaryColor: Color(0xFFD6A7F8),
+    ),
+  ];
+
+  /// Generate Light Theme based on a selected Pixel seed color
+  static ThemeData getLightTheme([Color? seedColor]) {
+    final primary = seedColor ?? AppColors.primary;
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
+      seedColor: primary,
       brightness: Brightness.light,
-      primary: AppColors.primary,
+      primary: primary,
       onPrimary: Colors.white,
-      secondary: AppColors.accent,
-      onSecondary: Colors.white,
       surface: AppColors.surfaceLight,
       surfaceTint: Colors.transparent,
       error: AppColors.error,
@@ -36,11 +87,14 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.cardLight,
+        color: colorScheme.surfaceContainerLowest,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.grey.shade200, width: 1),
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+            width: 1,
+          ),
         ),
         margin: EdgeInsets.zero,
       ),
@@ -58,7 +112,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -74,7 +128,7 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
-          backgroundColor: AppColors.primary,
+          backgroundColor: primary,
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 50),
           shape: RoundedRectangleBorder(
@@ -87,11 +141,11 @@ class AppTheme {
           ),
         ),
       ),
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.primary,
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: primary,
         foregroundColor: Colors.white,
         elevation: 4,
-        shape: CircleBorder(),
+        shape: const CircleBorder(),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppColors.surfaceLight,
@@ -108,15 +162,14 @@ class AppTheme {
     );
   }
 
-  /// Dark Theme Definition
-  static ThemeData get darkTheme {
+  /// Generate Dark Theme based on a selected Pixel seed color
+  static ThemeData getDarkTheme([Color? seedColor]) {
+    final primary = seedColor ?? AppColors.primaryLight;
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
+      seedColor: primary,
       brightness: Brightness.dark,
-      primary: AppColors.primaryLight,
+      primary: primary,
       onPrimary: Colors.white,
-      secondary: AppColors.accent,
-      onSecondary: Colors.white,
       surface: AppColors.surfaceDark,
       surfaceTint: Colors.transparent,
       error: AppColors.error,
@@ -141,11 +194,14 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.cardDark,
+        color: colorScheme.surfaceContainerLow,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.08), width: 1),
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+            width: 1,
+          ),
         ),
         margin: EdgeInsets.zero,
       ),
@@ -163,7 +219,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primaryLight, width: 2),
+          borderSide: BorderSide(color: primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -179,7 +235,7 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
-          backgroundColor: AppColors.primaryLight,
+          backgroundColor: primary,
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 50),
           shape: RoundedRectangleBorder(
@@ -192,11 +248,11 @@ class AppTheme {
           ),
         ),
       ),
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.primaryLight,
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: primary,
         foregroundColor: Colors.white,
         elevation: 4,
-        shape: CircleBorder(),
+        shape: const CircleBorder(),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppColors.surfaceDark,
@@ -212,4 +268,9 @@ class AppTheme {
       ),
     );
   }
+
+  // Backwards compatibility getters
+  static ThemeData get lightTheme => getLightTheme();
+  static ThemeData get darkTheme => getDarkTheme();
 }
+

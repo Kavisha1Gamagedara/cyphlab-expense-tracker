@@ -3,10 +3,10 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../state/expense_provider.dart';
-import '../state/theme_provider.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_state.dart';
 import '../widgets/expense_tile.dart';
+import '../widgets/theme_settings_sheet.dart';
 import 'expense_form.dart';
 
 /// Dashboard screen displaying monthly totals, category filters, and expense history.
@@ -48,7 +48,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final themeProvider = context.watch<ThemeProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -89,12 +88,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
           ),
           IconButton(
-            icon: Icon(
-              isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-            ),
-            tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+            icon: const Icon(Icons.palette_outlined),
+            tooltip: 'Theme & Colors',
             onPressed: () {
-              themeProvider.toggleTheme(!isDark);
+              ThemeSettingsSheet.show(context);
             },
           ),
         ],
@@ -122,15 +119,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColors.primary, AppColors.primaryDark],
+                        gradient: LinearGradient(
+                          colors: [
+                            theme.colorScheme.primary,
+                            isDark
+                                ? theme.colorScheme.primaryContainer
+                                : Color.lerp(theme.colorScheme.primary, Colors.black, 0.25)!,
+                          ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.35),
+                            color: theme.colorScheme.primary.withValues(alpha: 0.35),
                             blurRadius: 18,
                             offset: const Offset(0, 8),
                           ),
@@ -300,8 +302,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openExpenseForm(),
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
+        elevation: 4,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Add Expense'),
+        label: const Text(
+          'Add Expense',
+          style: TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.3),
+        ),
       ),
     );
   }
@@ -317,7 +325,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         selected: isSelected,
         label: Text(category),
         onSelected: (_) => provider.setSelectedCategory(category),
-        selectedColor: AppColors.primary,
+        selectedColor: theme.colorScheme.primary,
         checkmarkColor: Colors.white,
         labelStyle: TextStyle(
           color: isSelected
@@ -325,7 +333,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               : (isDark ? Colors.white70 : Colors.black87),
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
         ),
-        backgroundColor: isDark ? AppColors.surfaceDark : Colors.grey.shade100,
+        backgroundColor: isDark
+            ? theme.colorScheme.surfaceContainerHigh
+            : theme.colorScheme.surfaceContainerLow,
         side: BorderSide(
           color: isSelected
               ? Colors.transparent

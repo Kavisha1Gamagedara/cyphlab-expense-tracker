@@ -116,6 +116,54 @@ class _ExpenseFormState extends State<ExpenseForm> {
     }
   }
 
+  Future<void> _confirmDelete() async {
+    final provider = context.read<ExpenseProvider>();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Expense'),
+        content: const Text('Are you sure you want to delete this expense? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      setState(() => _isSubmitting = true);
+      final success = await provider.deleteExpense(widget.expenseToEdit!.id);
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Expense deleted successfully'),
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          Navigator.of(context).pop();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(provider.errorMessage ?? 'Failed to delete expense'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -128,6 +176,14 @@ class _ExpenseFormState extends State<ExpenseForm> {
           icon: const Icon(Icons.close_rounded),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          if (_isEditing)
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+              tooltip: 'Delete Expense',
+              onPressed: _isSubmitting ? null : _confirmDelete,
+            ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -141,10 +197,14 @@ class _ExpenseFormState extends State<ExpenseForm> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.surfaceDark : Colors.white,
+                    color: isDark
+                        ? theme.colorScheme.surfaceContainerHigh
+                        : theme.colorScheme.surfaceContainerLowest,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade200,
+                      color: isDark
+                          ? theme.colorScheme.outlineVariant.withValues(alpha: 0.2)
+                          : theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
                     ),
                   ),
                   child: Column(
@@ -163,7 +223,7 @@ class _ExpenseFormState extends State<ExpenseForm> {
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                          color: theme.colorScheme.primary,
                         ),
                         decoration: InputDecoration(
                           prefixIcon: Padding(
@@ -172,7 +232,7 @@ class _ExpenseFormState extends State<ExpenseForm> {
                               AppConstants.defaultCurrency,
                               style: theme.textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
+                                color: theme.colorScheme.primary,
                               ),
                             ),
                           ),
@@ -341,13 +401,17 @@ class _ExpenseFormState extends State<ExpenseForm> {
                 // Submit Button
                 ElevatedButton(
                   onPressed: _isSubmitting ? null : _submitForm,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                  ),
                   child: _isSubmitting
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: theme.colorScheme.onPrimary,
                           ),
                         )
                       : Text(_isEditing ? 'Update Expense' : 'Save Expense'),
