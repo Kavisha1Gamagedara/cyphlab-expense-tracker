@@ -404,17 +404,29 @@ class _ExpenseFormState extends State<ExpenseForm> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary,
                     foregroundColor: theme.colorScheme.onPrimary,
+                    minimumSize: const Size(double.infinity, 54),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    elevation: 3,
                   ),
                   child: _isSubmitting
                       ? SizedBox(
-                          height: 20,
-                          width: 20,
+                          height: 22,
+                          width: 22,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2,
+                            strokeWidth: 2.5,
                             color: theme.colorScheme.onPrimary,
                           ),
                         )
-                      : Text(_isEditing ? 'Update Expense' : 'Save Expense'),
+                      : Text(
+                          _isEditing ? 'Update Expense' : 'Save Expense',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
                 ),
               ],
             ),

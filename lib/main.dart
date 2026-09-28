@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'core/constants.dart';
 import 'firebase_options.dart';
 import 'presentation/screens/auth_screen.dart';
-import 'presentation/screens/dashboard_screen.dart';
+import 'presentation/screens/main_navigation_screen.dart';
 import 'presentation/state/auth_provider.dart';
 import 'presentation/state/expense_provider.dart';
 import 'presentation/state/theme_provider.dart';
@@ -52,9 +52,9 @@ class AuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
 
-    // If authenticated, show the main dashboard
+    // If authenticated, show the main navigation screen (Home & Analytics tabs)
     if (authProvider.isAuthenticated) {
-      return const DashboardScreen();
+      return const MainNavigationScreen();
     }
 
     // Otherwise show the login / sign up screen

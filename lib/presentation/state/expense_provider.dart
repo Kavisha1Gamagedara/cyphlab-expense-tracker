@@ -88,7 +88,26 @@ class ExpenseProvider extends ChangeNotifier {
     }).fold(0.0, (sum, item) => sum + item.amount);
   }
 
-  /// Breakdown of totals grouped by category for the selected month/date
+  /// Breakdown of totals grouped by category for the selected month (unbiased by category chip filter)
+  Map<String, double> get monthCategoryBreakdown {
+    final map = <String, double>{};
+    final monthExpenses = _expenses.where((expense) {
+      if (_selectedDate != null) {
+        return expense.date.year == _selectedDate!.year &&
+            expense.date.month == _selectedDate!.month &&
+            expense.date.day == _selectedDate!.day;
+      }
+      return expense.date.year == _selectedMonth.year &&
+          expense.date.month == _selectedMonth.month;
+    });
+
+    for (final expense in monthExpenses) {
+      map[expense.category] = (map[expense.category] ?? 0.0) + expense.amount;
+    }
+    return map;
+  }
+
+  /// Breakdown of totals grouped by category for current filtered expenses
   Map<String, double> get categoryBreakdown {
     final map = <String, double>{};
     for (final expense in filteredExpenses) {

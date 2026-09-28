@@ -590,17 +590,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openExpenseForm(),
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: theme.colorScheme.onPrimary,
-        elevation: 4,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text(
-          'Add Expense',
-          style: TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.3),
-        ),
-      ),
     );
   }
 
