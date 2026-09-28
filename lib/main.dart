@@ -3,7 +3,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'core/constants.dart';
 import 'firebase_options.dart';
+import 'presentation/screens/auth_screen.dart';
 import 'presentation/screens/dashboard_screen.dart';
+import 'presentation/state/auth_provider.dart';
 import 'presentation/state/expense_provider.dart';
 import 'presentation/state/theme_provider.dart';
 
@@ -23,6 +25,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ExpenseProvider()),
       ],
       child: Consumer<ThemeProvider>(
@@ -33,7 +36,7 @@ class MyApp extends StatelessWidget {
             theme: themeProvider.lightTheme,
             darkTheme: themeProvider.darkTheme,
             themeMode: themeProvider.themeMode,
-            home: const DashboardScreen(),
+            home: const AuthGate(),
           );
         },
       ),
@@ -41,3 +44,20 @@ class MyApp extends StatelessWidget {
   }
 }
 
+/// Dynamic gate that decides whether to show the Dashboard or the Auth screen.
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+
+    // If authenticated, show the main dashboard
+    if (authProvider.isAuthenticated) {
+      return const DashboardScreen();
+    }
+
+    // Otherwise show the login / sign up screen
+    return const AuthScreen();
+  }
+}

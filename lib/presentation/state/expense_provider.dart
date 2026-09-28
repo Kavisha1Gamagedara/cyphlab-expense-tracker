@@ -140,6 +140,16 @@ class ExpenseProvider extends ChangeNotifier {
     }
   }
 
+  /// Clear data on user logout
+  void clearData() {
+    _expenseSubscription?.cancel();
+    _expenseSubscription = null;
+    _expenses = [];
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _expenseSubscription?.cancel();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
+import '../state/auth_provider.dart';
 import '../state/expense_provider.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_state.dart';
@@ -40,6 +41,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ExpenseForm(expenseToEdit: expenseToEdit),
+      ),
+    );
+  }
+
+  void _confirmSignOut(BuildContext context) {
+    final authProvider = context.read<AuthProvider>();
+    final userEmail = authProvider.user?.email ?? 'your account';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Sign Out'),
+        content: Text('Are you sure you want to sign out from $userEmail?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.error,
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              context.read<ExpenseProvider>().clearData();
+              context.read<AuthProvider>().signOut();
+            },
+            child: const Text('Sign Out'),
+          ),
+        ],
       ),
     );
   }
@@ -94,6 +126,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ThemeSettingsSheet.show(context);
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.logout_rounded),
+            tooltip: 'Sign Out',
+            onPressed: () => _confirmSignOut(context),
+          ),
         ],
       ),
       body: Consumer<ExpenseProvider>(
@@ -115,35 +152,87 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            theme.colorScheme.primary,
-                            isDark
-                                ? theme.colorScheme.primaryContainer
-                                : Color.lerp(theme.colorScheme.primary, Colors.black, 0.25)!,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Consumer<AuthProvider>(
+                          builder: (context, auth, _) {
+                            final user = auth.user;
+                            final name = (user?.displayName != null && user!.displayName!.isNotEmpty)
+                                ? user.displayName
+                                : (user?.email?.split('@').first ?? 'User');
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12, left: 4),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 16,
+                                    backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
+                                    child: Text(
+                                      (name != null && name.isNotEmpty ? name[0] : 'U').toUpperCase(),
+                                      style: TextStyle(
+                                        color: theme.colorScheme.primary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Hello, $name 👋',
+                                          style: theme.textTheme.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          user?.email ?? '',
+                                          style: theme.textTheme.bodySmall?.copyWith(
+                                            color: isDark ? Colors.white60 : AppColors.textSecondaryLight,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.35),
-                            blurRadius: 18,
-                            offset: const Offset(0, 8),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                theme.colorScheme.primary,
+                                isDark
+                                    ? theme.colorScheme.primaryContainer
+                                    : Color.lerp(theme.colorScheme.primary, Colors.black, 0.25)!,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.primary.withValues(alpha: 0.35),
+                                blurRadius: 18,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
                               Text(
                                 'This Month\'s Spending',
                                 style: TextStyle(
@@ -203,8 +292,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
+              ),
+            ),
 
                 // Category Filter Bar
                 SliverToBoxAdapter(
