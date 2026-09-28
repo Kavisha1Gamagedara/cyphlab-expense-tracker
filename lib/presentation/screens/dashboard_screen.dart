@@ -153,65 +153,170 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.file_download_outlined),
-            tooltip: 'Export Report (PDF / CSV)',
-            onPressed: () {
-              final provider = context.read<ExpenseProvider>();
-              final periodTitle = provider.selectedDate != null
-                  ? DateFormat('MMMM dd, yyyy').format(provider.selectedDate!)
-                  : DateFormat('MMMM yyyy').format(provider.selectedMonth);
-              final totalSpent = provider.selectedDate != null
-                  ? provider.selectedDateTotal
-                  : provider.selectedMonthTotal;
-
-              ExportReportSheet.show(
-                context,
-                expenses: provider.filteredExpenses,
-                periodTitle: periodTitle,
-                totalAmount: totalSpent,
-              );
-            },
-          ),
-          Consumer<ExpenseProvider>(
-            builder: (context, provider, _) {
-              final count = provider.recycledCount;
-              return IconButton(
-                icon: Badge(
-                  isLabelVisible: count > 0,
-                  label: Text('$count'),
-                  backgroundColor: AppColors.error,
-                  child: const Icon(Icons.delete_outline_rounded),
-                ),
-                tooltip: 'Recycle Bin (5-day recovery)',
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const RecycleBinScreen(),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.calendar_month_rounded),
             tooltip: 'Filter by Month / Date',
             onPressed: () {
               CalendarSelectorSheet.show(context);
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.palette_outlined),
-            tooltip: 'Theme & Colors',
-            onPressed: () {
-              ThemeSettingsSheet.show(context);
+          Consumer<ExpenseProvider>(
+            builder: (context, provider, _) {
+              final count = provider.recycledCount;
+              return PopupMenuButton<String>(
+                icon: Badge(
+                  isLabelVisible: count > 0,
+                  label: Text('$count'),
+                  backgroundColor: AppColors.error,
+                  child: const Icon(Icons.more_vert_rounded),
+                ),
+                tooltip: 'More Options',
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                onSelected: (value) {
+                  switch (value) {
+                    case 'export':
+                      final periodTitle = provider.selectedDate != null
+                          ? DateFormat('MMMM dd, yyyy').format(provider.selectedDate!)
+                          : DateFormat('MMMM yyyy').format(provider.selectedMonth);
+                      final totalSpent = provider.selectedDate != null
+                          ? provider.selectedDateTotal
+                          : provider.selectedMonthTotal;
+                      ExportReportSheet.show(
+                        context,
+                        expenses: provider.filteredExpenses,
+                        periodTitle: periodTitle,
+                        totalAmount: totalSpent,
+                      );
+                      break;
+                    case 'recycle_bin':
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const RecycleBinScreen(),
+                        ),
+                      );
+                      break;
+                    case 'theme':
+                      ThemeSettingsSheet.show(context);
+                      break;
+                    case 'sign_out':
+                      _confirmSignOut(context);
+                      break;
+                  }
+                },
+                itemBuilder: (ctx) => [
+                  PopupMenuItem(
+                    value: 'export',
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.file_download_outlined,
+                            size: 18,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text('Export Report (PDF/CSV)'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'recycle_bin',
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.warning.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.delete_outline_rounded,
+                            size: 18,
+                            color: AppColors.warning,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(child: const Text('Recycle Bin')),
+                        if (count > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.error,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '$count',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'theme',
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.palette_outlined,
+                            size: 18,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text('Theme & Colors'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    value: 'sign_out',
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.logout_rounded,
+                            size: 18,
+                            color: AppColors.error,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Sign Out',
+                          style: TextStyle(color: AppColors.error),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            tooltip: 'Sign Out',
-            onPressed: () => _confirmSignOut(context),
-          ),
+          const SizedBox(width: 4),
         ],
       ),
       body: Consumer<ExpenseProvider>(
