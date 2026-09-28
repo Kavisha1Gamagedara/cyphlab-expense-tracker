@@ -11,6 +11,7 @@ import '../widgets/expense_tile.dart';
 import '../widgets/export_report_sheet.dart';
 import '../widgets/theme_settings_sheet.dart';
 import 'expense_form.dart';
+import 'recycle_bin_screen.dart';
 
 /// Dashboard screen displaying monthly totals, category filters, and expense history.
 class DashboardScreen extends StatefulWidget {
@@ -168,6 +169,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 expenses: provider.filteredExpenses,
                 periodTitle: periodTitle,
                 totalAmount: totalSpent,
+              );
+            },
+          ),
+          Consumer<ExpenseProvider>(
+            builder: (context, provider, _) {
+              final count = provider.recycledCount;
+              return IconButton(
+                icon: Badge(
+                  isLabelVisible: count > 0,
+                  label: Text('$count'),
+                  backgroundColor: AppColors.error,
+                  child: const Icon(Icons.delete_outline_rounded),
+                ),
+                tooltip: 'Recycle Bin (5-day recovery)',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const RecycleBinScreen(),
+                    ),
+                  );
+                },
               );
             },
           ),
@@ -662,7 +684,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           return ExpenseTile(
                             expense: expense,
                             onTap: () => _openExpenseForm(expense),
-                            onDelete: () => provider.deleteExpense(expense.id),
+                            onDelete: () {
+                              final deletedId = expense.id;
+                              final deletedTitle = expense.title;
+                              provider.deleteExpense(deletedId);
+                              ScaffoldMessenger.of(context).clearSnackBars();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Moved "$deletedTitle" to Recycle Bin'),
+                                  behavior: SnackBarBehavior.floating,
+                                  action: SnackBarAction(
+                                    label: 'Undo',
+                                    textColor: Colors.amberAccent,
+                                    onPressed: () {
+                                      provider.restoreExpense(deletedId);
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
                           );
                         },
                         childCount: expenses.length,

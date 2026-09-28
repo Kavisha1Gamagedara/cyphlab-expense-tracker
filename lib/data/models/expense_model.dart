@@ -8,6 +8,8 @@ class Expense {
   final String category;
   final DateTime date;
   final String? notes;
+  final bool isDeleted;
+  final DateTime? deletedAt;
 
   const Expense({
     this.id = '',
@@ -16,6 +18,8 @@ class Expense {
     required this.category,
     required this.date,
     this.notes,
+    this.isDeleted = false,
+    this.deletedAt,
   });
 
   /// Convert an Expense instance to a Map for Firestore storage
@@ -26,6 +30,8 @@ class Expense {
       'category': category,
       'date': Timestamp.fromDate(date),
       'notes': notes ?? '',
+      'isDeleted': isDeleted,
+      'deletedAt': deletedAt != null ? Timestamp.fromDate(deletedAt!) : null,
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
@@ -45,6 +51,16 @@ class Expense {
       parsedDate = DateTime.now();
     }
 
+    DateTime? parsedDeletedAt;
+    final delVal = map['deletedAt'];
+    if (delVal is Timestamp) {
+      parsedDeletedAt = delVal.toDate();
+    } else if (delVal is String) {
+      parsedDeletedAt = DateTime.tryParse(delVal);
+    } else if (delVal is int) {
+      parsedDeletedAt = DateTime.fromMillisecondsSinceEpoch(delVal);
+    }
+
     return Expense(
       id: id,
       title: map['title'] as String? ?? 'Untitled Expense',
@@ -52,6 +68,8 @@ class Expense {
       category: map['category'] as String? ?? 'Other',
       date: parsedDate,
       notes: (map['notes'] as String?)?.isNotEmpty == true ? map['notes'] as String : null,
+      isDeleted: map['isDeleted'] as bool? ?? false,
+      deletedAt: parsedDeletedAt,
     );
   }
 
@@ -69,6 +87,9 @@ class Expense {
     String? category,
     DateTime? date,
     String? notes,
+    bool? isDeleted,
+    DateTime? deletedAt,
+    bool clearDeletedAt = false,
   }) {
     return Expense(
       id: id ?? this.id,
@@ -77,6 +98,8 @@ class Expense {
       category: category ?? this.category,
       date: date ?? this.date,
       notes: notes ?? this.notes,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
     );
   }
 
@@ -90,7 +113,9 @@ class Expense {
           amount == other.amount &&
           category == other.category &&
           date == other.date &&
-          notes == other.notes;
+          notes == other.notes &&
+          isDeleted == other.isDeleted &&
+          deletedAt == other.deletedAt;
 
   @override
   int get hashCode =>
@@ -99,10 +124,12 @@ class Expense {
       amount.hashCode ^
       category.hashCode ^
       date.hashCode ^
-      (notes?.hashCode ?? 0);
+      (notes?.hashCode ?? 0) ^
+      isDeleted.hashCode ^
+      (deletedAt?.hashCode ?? 0);
 
   @override
   String toString() {
-    return 'Expense(id: $id, title: $title, amount: $amount, category: $category, date: $date)';
+    return 'Expense(id: $id, title: $title, amount: $amount, category: $category, date: $date, isDeleted: $isDeleted, deletedAt: $deletedAt)';
   }
 }

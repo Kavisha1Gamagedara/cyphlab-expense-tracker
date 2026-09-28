@@ -22,7 +22,17 @@ class ExpenseProvider extends ChangeNotifier {
       : _firebaseService = firebaseService ?? FirebaseService();
 
   // Getters
-  List<Expense> get allExpenses => _expenses;
+  /// All active (non-deleted) expenses
+  List<Expense> get allExpenses => _expenses.where((e) => !e.isDeleted).toList();
+
+  /// All expenses in the Recycle Bin (deleted within retention window)
+  List<Expense> get recycledExpenses =>
+      _expenses.where((e) => e.isDeleted).toList()
+        ..sort((a, b) => (b.deletedAt ?? b.date).compareTo(a.deletedAt ?? a.date));
+
+  /// Count of recycled items
+  int get recycledCount => recycledExpenses.length;
+
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   String get selectedCategory => _selectedCategory;
@@ -47,7 +57,7 @@ class ExpenseProvider extends ChangeNotifier {
   /// Daily expenses for each day of the selected month (dayNumber to dayExpenseTotal)
   Map<int, double> get dailyExpensesInSelectedMonth {
     final map = {for (int i = 1; i <= daysInSelectedMonth; i++) i: 0.0};
-    for (final exp in _expenses) {
+    for (final exp in allExpenses) {
       if (exp.date.year == _selectedMonth.year && exp.date.month == _selectedMonth.month) {
         final day = exp.date.day;
         if (map.containsKey(day)) {
@@ -85,7 +95,7 @@ class ExpenseProvider extends ChangeNotifier {
 
   /// Filtered list of expenses based on selected category, search query, and selected month / date
   List<Expense> get filteredExpenses {
-    return _expenses.where((expense) {
+    return allExpenses.where((expense) {
       final matchesCategory =
           _selectedCategory == 'All' || expense.category == _selectedCategory;
       final matchesSearch = _searchQuery.isEmpty ||
@@ -108,12 +118,12 @@ class ExpenseProvider extends ChangeNotifier {
 
   /// Total sum of all expenses across all time
   double get totalExpenses {
-    return _expenses.fold(0.0, (sum, item) => sum + item.amount);
+    return allExpenses.fold(0.0, (sum, item) => sum + item.amount);
   }
 
   /// Total sum for the selected month
   double get selectedMonthTotal {
-    return _expenses.where((expense) {
+    return allExpenses.where((expense) {
       return expense.date.year == _selectedMonth.year &&
           expense.date.month == _selectedMonth.month;
     }).fold(0.0, (sum, item) => sum + item.amount);
@@ -122,7 +132,7 @@ class ExpenseProvider extends ChangeNotifier {
   /// Total sum for the selected single date (if a day is selected)
   double get selectedDateTotal {
     if (_selectedDate == null) return selectedMonthTotal;
-    return _expenses.where((expense) {
+    return allExpenses.where((expense) {
       return expense.date.year == _selectedDate!.year &&
           expense.date.month == _selectedDate!.month &&
           expense.date.day == _selectedDate!.day;
@@ -132,7 +142,7 @@ class ExpenseProvider extends ChangeNotifier {
   /// Total sum for the current month
   double get currentMonthTotal {
     final now = DateTime.now();
-    return _expenses.where((expense) {
+    return allExpenses.where((expense) {
       return expense.date.year == now.year && expense.date.month == now.month;
     }).fold(0.0, (sum, item) => sum + item.amount);
   }
@@ -140,7 +150,7 @@ class ExpenseProvider extends ChangeNotifier {
   /// Breakdown of totals grouped by category for the selected month (unbiased by category chip filter)
   Map<String, double> get monthCategoryBreakdown {
     final map = <String, double>{};
-    final monthExpenses = _expenses.where((expense) {
+    final monthExpenses = allExpenses.where((expense) {
       if (_selectedDate != null) {
         return expense.date.year == _selectedDate!.year &&
             expense.date.month == _selectedDate!.month &&
@@ -181,6 +191,8 @@ class ExpenseProvider extends ChangeNotifier {
           _isLoading = false;
           _errorMessage = null;
           notifyListeners();
+          // Purge any expenses soft-deleted more than 5 days ago
+          autoPurgeExpiredRecycledExpenses();
         },
         onError: (error) {
           debugPrint('[ExpenseProvider] Stream error: $error');
@@ -312,15 +324,77 @@ class ExpenseProvider extends ChangeNotifier {
     }
   }
 
-  /// Delete an expense
+  /// Move an expense to the Recycle Bin (soft delete for 5 days)
   Future<bool> deleteExpense(String expenseId) async {
     try {
-      await _firebaseService.deleteExpense(expenseId);
+      await _firebaseService.moveToRecycleBin(expenseId);
       return true;
     } catch (e) {
       _errorMessage = e.toString();
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Restore an expense from the Recycle Bin back to active expenses
+  Future<bool> restoreExpense(String expenseId) async {
+    try {
+      await _firebaseService.restoreExpense(expenseId);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Permanently delete an expense forever
+  Future<bool> permanentlyDeleteExpense(String expenseId) async {
+    try {
+      await _firebaseService.permanentlyDeleteExpense(expenseId);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Empty all items currently in the Recycle Bin permanently
+  Future<bool> emptyRecycleBin() async {
+    try {
+      final ids = recycledExpenses.map((e) => e.id).toList();
+      await _firebaseService.permanentlyDeleteExpenses(ids);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Automatically purge deleted items that have exceeded the 5-day retention threshold
+  Future<void> autoPurgeExpiredRecycledExpenses() async {
+    final now = DateTime.now();
+    const retentionDuration = Duration(days: 5);
+    final expiredIds = <String>[];
+
+    for (final exp in recycledExpenses) {
+      final deletedTimestamp = exp.deletedAt;
+      if (deletedTimestamp != null) {
+        if (now.difference(deletedTimestamp) > retentionDuration) {
+          expiredIds.add(exp.id);
+        }
+      }
+    }
+
+    if (expiredIds.isNotEmpty) {
+      debugPrint('[ExpenseProvider] Purging ${expiredIds.length} expired items older than 5 days');
+      try {
+        await _firebaseService.permanentlyDeleteExpenses(expiredIds);
+      } catch (e) {
+        debugPrint('[ExpenseProvider] Failed to auto-purge expired items: $e');
+      }
     }
   }
 

@@ -46,6 +46,35 @@ class ExpenseTile extends StatelessWidget {
           size: 26,
         ),
       ),
+      confirmDismiss: (direction) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Row(
+              children: [
+                Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                SizedBox(width: 8),
+                Text('Delete Expense'),
+              ],
+            ),
+            content: Text(
+              'Move "${expense.title}" to the Recycle Bin? It will be kept safely for 5 days.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Move to Bin'),
+              ),
+            ],
+          ),
+        );
+      },
       onDismissed: (_) {
         onDelete?.call();
       },

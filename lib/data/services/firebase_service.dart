@@ -81,8 +81,50 @@ class FirebaseService {
     }
   }
 
-  /// Delete an expense document by ID
-  Future<void> deleteExpense(String expenseId) async {
+  /// Move an expense document to Recycle Bin (soft delete)
+  Future<void> moveToRecycleBin(String expenseId) async {
+    final uid = _currentUserId;
+    if (uid == null) {
+      throw Exception('Cannot delete expense: No authenticated user.');
+    }
+    if (expenseId.isEmpty) {
+      throw ArgumentError('Expense ID cannot be empty');
+    }
+
+    try {
+      await _userExpensesRef(uid).doc(expenseId).update({
+        'isDeleted': true,
+        'deletedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to move expense to recycle bin: $e');
+    }
+  }
+
+  /// Restore an expense from Recycle Bin back to active expenses
+  Future<void> restoreExpense(String expenseId) async {
+    final uid = _currentUserId;
+    if (uid == null) {
+      throw Exception('Cannot restore expense: No authenticated user.');
+    }
+    if (expenseId.isEmpty) {
+      throw ArgumentError('Expense ID cannot be empty');
+    }
+
+    try {
+      await _userExpensesRef(uid).doc(expenseId).update({
+        'isDeleted': false,
+        'deletedAt': null,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to restore expense: $e');
+    }
+  }
+
+  /// Permanently delete an expense document by ID from Firestore
+  Future<void> permanentlyDeleteExpense(String expenseId) async {
     final uid = _currentUserId;
     if (uid == null) {
       throw Exception('Cannot delete expense: No authenticated user.');
@@ -94,9 +136,28 @@ class FirebaseService {
     try {
       await _userExpensesRef(uid).doc(expenseId).delete();
     } catch (e) {
-      throw Exception('Failed to delete expense: $e');
+      throw Exception('Failed to permanently delete expense: $e');
     }
   }
+
+  /// Permanently delete multiple expenses (e.g. Empty Bin or purge expired)
+  Future<void> permanentlyDeleteExpenses(List<String> expenseIds) async {
+    final uid = _currentUserId;
+    if (uid == null || expenseIds.isEmpty) return;
+
+    try {
+      final batch = _firestore.batch();
+      for (final id in expenseIds) {
+        batch.delete(_userExpensesRef(uid).doc(id));
+      }
+      await batch.commit();
+    } catch (e) {
+      throw Exception('Failed to delete expenses: $e');
+    }
+  }
+
+  /// Backward compatible deleteExpense method that soft-deletes to recycle bin
+  Future<void> deleteExpense(String expenseId) => moveToRecycleBin(expenseId);
 
   /// Reference to budgets subcollection: users/{userId}/budgets
   CollectionReference<Map<String, dynamic>> _userBudgetsRef(String userId) {

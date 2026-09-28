@@ -8,6 +8,7 @@ import '../widgets/export_report_sheet.dart';
 import '../widgets/monthly_analytics_card.dart';
 import '../widgets/monthly_budget_card.dart';
 import '../widgets/theme_settings_sheet.dart';
+import 'recycle_bin_screen.dart';
 
 /// Dedicated Analytics Dashboard screen showing in-depth monthly/daily spending insights.
 class AnalyticsScreen extends StatelessWidget {
@@ -62,6 +63,27 @@ class AnalyticsScreen extends StatelessWidget {
                     expenses: provider.filteredExpenses,
                     periodTitle: periodTitle,
                     totalAmount: totalSpent,
+                  );
+                },
+              ),
+              Consumer<ExpenseProvider>(
+                builder: (context, provider, _) {
+                  final count = provider.recycledCount;
+                  return IconButton(
+                    icon: Badge(
+                      isLabelVisible: count > 0,
+                      label: Text('$count'),
+                      backgroundColor: AppColors.error,
+                      child: const Icon(Icons.delete_outline_rounded),
+                    ),
+                    tooltip: 'Recycle Bin (5-day recovery)',
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const RecycleBinScreen(),
+                        ),
+                      );
+                    },
                   );
                 },
               ),

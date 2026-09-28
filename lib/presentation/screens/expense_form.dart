@@ -121,17 +121,26 @@ class _ExpenseFormState extends State<ExpenseForm> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Expense'),
-        content: const Text('Are you sure you want to delete this expense? This action cannot be undone.'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.delete_outline_rounded, color: AppColors.error),
+            SizedBox(width: 8),
+            Text('Delete Expense'),
+          ],
+        ),
+        content: const Text(
+          'Move this expense to the Recycle Bin? It will be kept safely for 5 days before being permanently removed.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Delete'),
+            child: const Text('Move to Bin'),
           ),
         ],
       ),
@@ -145,7 +154,7 @@ class _ExpenseFormState extends State<ExpenseForm> {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Expense deleted successfully'),
+              content: Text('Expense moved to Recycle Bin (kept for 5 days)'),
               backgroundColor: AppColors.success,
               behavior: SnackBarBehavior.floating,
             ),
