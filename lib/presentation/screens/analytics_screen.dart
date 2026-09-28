@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../state/expense_provider.dart';
 import '../widgets/calendar_selector_sheet.dart';
+import '../widgets/export_report_sheet.dart';
 import '../widgets/monthly_analytics_card.dart';
 import '../widgets/monthly_budget_card.dart';
 import '../widgets/theme_settings_sheet.dart';
@@ -52,6 +53,18 @@ class AnalyticsScreen extends StatelessWidget {
           appBar: AppBar(
             title: const Text('Analytics'),
             actions: [
+              IconButton(
+                icon: const Icon(Icons.file_download_outlined),
+                tooltip: 'Export Report (PDF / CSV)',
+                onPressed: () {
+                  ExportReportSheet.show(
+                    context,
+                    expenses: provider.filteredExpenses,
+                    periodTitle: periodTitle,
+                    totalAmount: totalSpent,
+                  );
+                },
+              ),
               IconButton(
                 icon: const Icon(Icons.calendar_month_rounded),
                 tooltip: 'Select Period',
@@ -234,6 +247,98 @@ class AnalyticsScreen extends StatelessWidget {
                     categoryBreakdown: breakdown,
                     totalAmount: totalSpent,
                     periodTitle: periodTitle,
+                  ),
+
+                  // Export Summary Action Card
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    child: Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: isDark
+                              ? [
+                                  AppColors.surfaceDark,
+                                  AppColors.primaryDark.withValues(alpha: 0.4),
+                                ]
+                              : [
+                                  Colors.white,
+                                  AppColors.primary.withValues(alpha: 0.05),
+                                ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isDark
+                              ? AppColors.primary.withValues(alpha: 0.3)
+                              : AppColors.primary.withValues(alpha: 0.15),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.print_rounded,
+                              color: AppColors.primary,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Export Expense Report',
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Generate printable PDF or Excel CSV for $periodTitle',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: isDark
+                                        ? AppColors.textSecondaryDark
+                                        : AppColors.textSecondaryLight,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          FilledButton.tonalIcon(
+                            style: FilledButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                            onPressed: () {
+                              ExportReportSheet.show(
+                                context,
+                                expenses: provider.filteredExpenses,
+                                periodTitle: periodTitle,
+                                totalAmount: totalSpent,
+                              );
+                            },
+                            icon: const Icon(Icons.download_rounded, size: 16),
+                            label: const Text('Export'),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
 
                   const SizedBox(height: 80),

@@ -8,6 +8,7 @@ import '../widgets/calendar_selector_sheet.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_state.dart';
 import '../widgets/expense_tile.dart';
+import '../widgets/export_report_sheet.dart';
 import '../widgets/theme_settings_sheet.dart';
 import 'expense_form.dart';
 
@@ -148,6 +149,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   context.read<ExpenseProvider>().setSearchQuery('');
                 }
               });
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.file_download_outlined),
+            tooltip: 'Export Report (PDF / CSV)',
+            onPressed: () {
+              final provider = context.read<ExpenseProvider>();
+              final periodTitle = provider.selectedDate != null
+                  ? DateFormat('MMMM dd, yyyy').format(provider.selectedDate!)
+                  : DateFormat('MMMM yyyy').format(provider.selectedMonth);
+              final totalSpent = provider.selectedDate != null
+                  ? provider.selectedDateTotal
+                  : provider.selectedMonthTotal;
+
+              ExportReportSheet.show(
+                context,
+                expenses: provider.filteredExpenses,
+                periodTitle: periodTitle,
+                totalAmount: totalSpent,
+              );
             },
           ),
           IconButton(
