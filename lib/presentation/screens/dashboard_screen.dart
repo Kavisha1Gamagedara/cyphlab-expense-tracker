@@ -2,16 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
+import '../../data/models/expense_model.dart';
 import '../state/auth_provider.dart';
 import '../state/expense_provider.dart';
 import '../widgets/calendar_selector_sheet.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_state.dart';
 import '../widgets/expense_tile.dart';
+import '../widgets/export_report_sheet.dart';
 import '../widgets/theme_settings_sheet.dart';
 import 'expense_form.dart';
+import 'onboarding_screen.dart';
+import 'recycle_bin_screen.dart';
 
-/// Dashboard screen displaying monthly totals, category filters, and expense history.
+/// Dashboard screen displaying monthly totals, calendar strip, bento metrics, and expense history.
+/// Styled with a creative, modern, and playful aesthetic inspired by modern mobile UI concepts.
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -20,12 +25,13 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
+  late DateTime _weekReferenceDate;
 
   @override
   void initState() {
     super.initState();
+    _weekReferenceDate = DateTime.now();
     // Start listening to the Firestore stream upon entering
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ExpenseProvider>().startListening();
@@ -38,7 +44,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.dispose();
   }
 
-  void _openExpenseForm([dynamic expenseToEdit]) {
+  void _openExpenseForm([Expense? expenseToEdit]) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ExpenseForm(expenseToEdit: expenseToEdit),
@@ -77,462 +83,1044 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  void _showSetBudgetDialog(BuildContext context, ExpenseProvider provider) {
+    final currentBudget = provider.currentMonthBudget;
+    final controller = TextEditingController(
+      text: currentBudget != null && currentBudget > 0
+          ? currentBudget.toStringAsFixed(0)
+          : '',
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.savings_rounded,
+                color: AppColors.primary,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text('Monthly Target'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Set a spending limit for ${DateFormat('MMMM yyyy').format(provider.selectedMonth)}:',
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              autofocus: true,
+              decoration: InputDecoration(
+                prefixText: '${AppConstants.defaultCurrency} ',
+                hintText: 'e.g. 1500',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          if (currentBudget != null && currentBudget > 0)
+            TextButton(
+              onPressed: () async {
+                await provider.setMonthlyBudget(0);
+                if (ctx.mounted) Navigator.of(ctx).pop();
+              },
+              child: const Text('Remove Limit', style: TextStyle(color: AppColors.error)),
+            ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final val = double.tryParse(controller.text.trim()) ?? 0;
+              await provider.setMonthlyBudget(val);
+              if (ctx.mounted) Navigator.of(ctx).pop();
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Get the 7 days of the week starting Sunday
+  List<DateTime> _getWeekDays(DateTime refDate) {
+    final startOfWeek = refDate.subtract(Duration(days: refDate.weekday % 7));
+    return List.generate(7, (i) => DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day + i));
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: _isSearching
-            ? TextField(
-                controller: _searchController,
-                autofocus: true,
-                style: TextStyle(
-                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Search expenses...',
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  filled: false,
-                  hintStyle: TextStyle(
-                    color: isDark ? Colors.white54 : Colors.black45,
-                  ),
-                ),
-                onChanged: (val) {
-                  context.read<ExpenseProvider>().setSearchQuery(val);
-                },
-              )
-            : Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    margin: const EdgeInsets.only(right: 10),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white,
-                      border: Border.all(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        AppConstants.appLogo,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                  const Text('Trace'),
-                ],
-              ),
-        actions: [
-          IconButton(
-            icon: Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded),
-            tooltip: _isSearching ? 'Close Search' : 'Search',
-            onPressed: () {
-              setState(() {
-                _isSearching = !_isSearching;
-                if (!_isSearching) {
-                  _searchController.clear();
-                  context.read<ExpenseProvider>().setSearchQuery('');
-                }
-              });
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.calendar_month_rounded),
-            tooltip: 'Filter by Month / Date',
-            onPressed: () {
-              CalendarSelectorSheet.show(context);
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.palette_outlined),
-            tooltip: 'Theme & Colors',
-            onPressed: () {
-              ThemeSettingsSheet.show(context);
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            tooltip: 'Sign Out',
-            onPressed: () => _confirmSignOut(context),
-          ),
-        ],
-      ),
-      body: Consumer<ExpenseProvider>(
-        builder: (context, provider, child) {
-          final expenses = provider.filteredExpenses;
+      body: SafeArea(
+        bottom: false,
+        child: Consumer<ExpenseProvider>(
+          builder: (context, provider, child) {
+            final expenses = provider.filteredExpenses;
+            final user = context.watch<AuthProvider>().user;
+            final name = (user?.displayName != null && user!.displayName!.isNotEmpty)
+                ? user.displayName
+                : (user?.email?.split('@').first ?? 'Friend');
 
-          return RefreshIndicator(
-            onRefresh: () async {
-              provider.startListening();
-            },
-            child: CustomScrollView(
-              slivers: [
-                // Top Summary Card
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Consumer<AuthProvider>(
-                          builder: (context, auth, _) {
-                            final user = auth.user;
-                            final name = (user?.displayName != null && user!.displayName!.isNotEmpty)
-                                ? user.displayName
-                                : (user?.email?.split('@').first ?? 'User');
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12, left: 4),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 16,
-                                    backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
-                                    child: Text(
-                                      (name != null && name.isNotEmpty ? name[0] : 'U').toUpperCase(),
-                                      style: TextStyle(
-                                        color: theme.colorScheme.primary,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
+            final totalSpent = provider.selectedDate != null
+                ? provider.selectedDateTotal
+                : provider.selectedMonthTotal;
+
+            final double? rawBudget = provider.currentMonthBudget;
+            final bool hasBudget = rawBudget != null && rawBudget > 0;
+            final double budget = rawBudget ?? 0.0;
+            final double budgetRemaining = budget - totalSpent;
+
+            // Daily average calculation
+            final daysInMonth = provider.daysInSelectedMonth;
+            final dailyAverage = totalSpent / (provider.selectedDate != null ? 1 : daysInMonth);
+
+            // Find top category
+            final breakdown = provider.monthCategoryBreakdown;
+            String topCategoryName = 'None';
+            if (breakdown.isNotEmpty) {
+              final sorted = breakdown.entries.toList()
+                ..sort((a, b) => b.value.compareTo(a.value));
+              topCategoryName = sorted.first.key;
+            }
+
+            final periodTitle = provider.selectedDate != null
+                ? DateFormat('MMMM dd, yyyy').format(provider.selectedDate!)
+                : DateFormat('MMMM yyyy').format(provider.selectedMonth);
+
+            // Keep _weekReferenceDate synchronized with selected date or month
+            if (provider.selectedDate != null) {
+              _weekReferenceDate = provider.selectedDate!;
+            } else if (_weekReferenceDate.year != provider.selectedMonth.year ||
+                _weekReferenceDate.month != provider.selectedMonth.month) {
+              final now = DateTime.now();
+              if (now.year == provider.selectedMonth.year && now.month == provider.selectedMonth.month) {
+                _weekReferenceDate = now;
+              } else {
+                _weekReferenceDate = DateTime(provider.selectedMonth.year, provider.selectedMonth.month, 1);
+              }
+            }
+
+            final weekDays = _getWeekDays(_weekReferenceDate);
+
+            return RefreshIndicator(
+              onRefresh: () async {
+                provider.startListening();
+              },
+              child: CustomScrollView(
+                slivers: [
+                  // 1. Creative Profile Header & Actions
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Left: Avatar + Greeting + Badge
+                          Row(
+                            children: [
+                              Container(
+                                width: 46,
+                                height: 46,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      theme.colorScheme.primary,
+                                      theme.colorScheme.primary.withValues(alpha: 0.6),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: theme.colorScheme.primary.withValues(alpha: 0.25),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    (name != null && name.isNotEmpty ? name[0] : 'U').toUpperCase(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Hello, $name 👋',
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 18,
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? AppColors.primary.withValues(alpha: 0.2)
+                                          : AppColors.primary.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text(
-                                          'Hello, $name 👋',
-                                          style: theme.textTheme.titleMedium?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                        Icon(
+                                          Icons.bolt_rounded,
+                                          size: 12,
+                                          color: theme.colorScheme.primary,
                                         ),
+                                        const SizedBox(width: 2),
                                         Text(
-                                          user?.email ?? '',
-                                          style: theme.textTheme.bodySmall?.copyWith(
-                                            color: isDark ? Colors.white60 : AppColors.textSecondaryLight,
+                                          'Smart Saver',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                            color: theme.colorScheme.primary,
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ],
                                     ),
                                   ),
                                 ],
                               ),
-                            );
-                          },
-                        ),
-                        // Dynamic Spending Card with Calendar Selector
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(22),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                theme.colorScheme.primary,
-                                isDark
-                                    ? theme.colorScheme.primaryContainer
-                                    : Color.lerp(theme.colorScheme.primary, Colors.black, 0.25)!,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: theme.colorScheme.primary.withValues(alpha: 0.35),
-                                blurRadius: 18,
-                                offset: const Offset(0, 8),
-                              ),
                             ],
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Top Bar: Period Label and Quick Nav + Calendar Trigger
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        provider.selectedDate != null
-                                            ? 'Daily Spending'
-                                            : (provider.isCurrentMonth
-                                                ? "This Month's Spending"
-                                                : "Selected Month"),
-                                        style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.9),
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
+
+                          // Right: Options Menu with Notification Badge
+                          Consumer<ExpenseProvider>(
+                            builder: (context, provider, _) {
+                              final count = provider.recycledCount;
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.surfaceDark : Colors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isDark
+                                        ? Colors.white10
+                                        : Colors.black.withValues(alpha: 0.08),
                                   ),
-                                  // Month / Date Chip with interactive tap to open Calendar
-                                  InkWell(
-                                    onTap: () => CalendarSelectorSheet.show(context),
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.22),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: Colors.white.withValues(alpha: 0.3),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.calendar_month_rounded,
-                                            size: 14,
-                                            color: Colors.white,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: PopupMenuButton<String>(
+                                  icon: Badge(
+                                    isLabelVisible: count > 0,
+                                    label: Text('$count'),
+                                    backgroundColor: AppColors.error,
+                                    child: Icon(
+                                      Icons.more_vert_rounded,
+                                      color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                                      size: 22,
+                                    ),
+                                  ),
+                                  tooltip: 'Options',
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  onSelected: (value) {
+                                    switch (value) {
+                                      case 'calendar':
+                                        CalendarSelectorSheet.show(context);
+                                        break;
+                                      case 'export':
+                                        ExportReportSheet.show(
+                                          context,
+                                          expenses: provider.filteredExpenses,
+                                          periodTitle: periodTitle,
+                                          totalAmount: totalSpent,
+                                        );
+                                        break;
+                                      case 'recycle_bin':
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => const RecycleBinScreen(),
                                           ),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            provider.selectedDate != null
-                                                ? DateFormat('MMM dd, yyyy')
-                                                    .format(provider.selectedDate!)
-                                                : DateFormat('MMM yyyy')
-                                                    .format(provider.selectedMonth),
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
+                                        );
+                                        break;
+                                      case 'theme':
+                                        ThemeSettingsSheet.show(context);
+                                        break;
+                                      case 'onboarding':
+                                        OnboardingScreen.show(context);
+                                        break;
+                                      case 'sign_out':
+                                        _confirmSignOut(context);
+                                        break;
+                                    }
+                                  },
+                                  itemBuilder: (ctx) => [
+                                    PopupMenuItem(
+                                      value: 'calendar',
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primary.withValues(alpha: 0.1),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: const Icon(
+                                              Icons.calendar_month_rounded,
+                                              size: 18,
+                                              color: AppColors.primary,
                                             ),
                                           ),
-                                          const SizedBox(width: 3),
-                                          const Icon(
-                                            Icons.arrow_drop_down_rounded,
-                                            size: 18,
-                                            color: Colors.white,
+                                          const SizedBox(width: 12),
+                                          const Text('Select Month / Day'),
+                                        ],
+                                      ),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'export',
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primary.withValues(alpha: 0.1),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: const Icon(
+                                              Icons.file_download_outlined,
+                                              size: 18,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          const Text('Export Report (PDF/CSV)'),
+                                        ],
+                                      ),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'recycle_bin',
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.warning.withValues(alpha: 0.12),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: const Icon(
+                                              Icons.delete_outline_rounded,
+                                              size: 18,
+                                              color: AppColors.warning,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          const Expanded(child: Text('Recycle Bin')),
+                                          if (count > 0)
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 7,
+                                                vertical: 2,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.error,
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                              child: Text(
+                                                '$count',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'theme',
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.accent.withValues(alpha: 0.12),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: const Icon(
+                                              Icons.palette_outlined,
+                                              size: 18,
+                                              color: AppColors.accent,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          const Text('Theme & Colors'),
+                                        ],
+                                      ),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'onboarding',
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFC084FC).withValues(alpha: 0.15),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: const Icon(
+                                              Icons.auto_awesome_rounded,
+                                              size: 18,
+                                              color: Color(0xFFA855F7),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          const Text('Onboarding Story'),
+                                        ],
+                                      ),
+                                    ),
+                                    const PopupMenuDivider(),
+                                    PopupMenuItem(
+                                      value: 'sign_out',
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.error.withValues(alpha: 0.1),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: const Icon(
+                                              Icons.logout_rounded,
+                                              size: 18,
+                                              color: AppColors.error,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          const Text(
+                                            'Sign Out',
+                                            style: TextStyle(color: AppColors.error),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // 2. Sleek Stadium Search Field
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                      child: Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.surfaceDark : Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.white12
+                                : Colors.black.withValues(alpha: 0.08),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Search expenses, categories, notes...',
+                            hintStyle: TextStyle(
+                              fontSize: 13,
+                              color: isDark ? Colors.white38 : Colors.black38,
+                            ),
+                            prefixIcon: Icon(
+                              Icons.search_rounded,
+                              size: 20,
+                              color: theme.colorScheme.primary,
+                            ),
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.close_rounded, size: 18),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      provider.setSearchQuery('');
+                                      setState(() {});
+                                    },
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          onChanged: (val) {
+                            provider.setSearchQuery(val);
+                            setState(() {});
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // 3. Horizontal Interactive Calendar Strip (Inspired by Dribbble concept)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.surfaceDark : Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.white10
+                                : Colors.black.withValues(alpha: 0.06),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            // Month Header with Chevrons and All Month button
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                InkWell(
+                                  onTap: () => CalendarSelectorSheet.show(context),
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          DateFormat('MMMM yyyy').format(provider.selectedMonth),
+                                          style: theme.textTheme.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    if (provider.selectedDate != null)
+                                      InkWell(
+                                        onTap: () => provider.clearDateFilter(),
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          margin: const EdgeInsets.only(right: 8),
+                                          decoration: BoxDecoration(
+                                            color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Text(
+                                            'All Month',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: theme.colorScheme.primary,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      icon: const Icon(Icons.chevron_left_rounded, size: 22),
+                                      tooltip: 'Previous week',
+                                      onPressed: () {
+                                        setState(() {
+                                          _weekReferenceDate = _weekReferenceDate.subtract(const Duration(days: 7));
+                                          if (_weekReferenceDate.month != provider.selectedMonth.month ||
+                                              _weekReferenceDate.year != provider.selectedMonth.year) {
+                                            provider.setSelectedMonth(DateTime(_weekReferenceDate.year, _weekReferenceDate.month));
+                                          }
+                                        });
+                                      },
+                                    ),
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      icon: const Icon(Icons.chevron_right_rounded, size: 22),
+                                      tooltip: 'Next week',
+                                      onPressed: () {
+                                        setState(() {
+                                          _weekReferenceDate = _weekReferenceDate.add(const Duration(days: 7));
+                                          if (_weekReferenceDate.month != provider.selectedMonth.month ||
+                                              _weekReferenceDate.year != provider.selectedMonth.year) {
+                                            provider.setSelectedMonth(DateTime(_weekReferenceDate.year, _weekReferenceDate.month));
+                                          }
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+
+                            // 7-Day Horizontal Strip
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: weekDays.map((dayDate) {
+                                final isSelected = provider.selectedDate != null &&
+                                    provider.selectedDate!.year == dayDate.year &&
+                                    provider.selectedDate!.month == dayDate.month &&
+                                    provider.selectedDate!.day == dayDate.day;
+
+                                final isToday = dayDate.year == DateTime.now().year &&
+                                    dayDate.month == DateTime.now().month &&
+                                    dayDate.day == DateTime.now().day;
+
+                                final hasExpenses = (provider.dailyExpensesInSelectedMonth[dayDate.day] ?? 0) > 0;
+                                final isDifferentMonth = dayDate.month != provider.selectedMonth.month;
+
+                                return Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      if (isSelected) {
+                                        provider.clearDateFilter();
+                                      } else {
+                                        provider.setSelectedDate(dayDate);
+                                      }
+                                    },
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 200),
+                                      margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                                      padding: const EdgeInsets.symmetric(vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? (isDark ? Colors.white : const Color(0xFF18181B))
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: isToday && !isSelected
+                                            ? Border.all(
+                                                color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                                                width: 1.5,
+                                              )
+                                            : null,
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            DateFormat('E').format(dayDate)[0], // S, M, T, W, T, F, S
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: isSelected
+                                                  ? (isDark ? Colors.black87 : Colors.white)
+                                                  : (isDifferentMonth
+                                                      ? Colors.grey.shade400
+                                                      : (isDark ? Colors.white54 : Colors.grey.shade600)),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            '${dayDate.day}',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                              color: isSelected
+                                                  ? (isDark ? Colors.black : Colors.white)
+                                                  : (isDifferentMonth
+                                                      ? Colors.grey.shade400
+                                                      : (isDark ? Colors.white : AppColors.textPrimaryLight)),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          // Micro dot indicator for days with expenses
+                                          Container(
+                                            width: 4,
+                                            height: 4,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: isSelected
+                                                  ? (isDark ? theme.colorScheme.primary : Colors.amberAccent)
+                                                  : (hasExpenses
+                                                      ? theme.colorScheme.primary
+                                                      : Colors.transparent),
+                                            ),
                                           ),
                                         ],
                                       ),
                                     ),
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 14),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
 
-                              // Total Amount Display
-                              Text(
-                                NumberFormat.currency(
-                                  symbol: AppConstants.defaultCurrency,
-                                  decimalDigits: 2,
-                                ).format(
+                  // 4. Hero Spending & Budget Progress Card (High-Contrast Dribbble Style)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                      child: Container(
+                        padding: const EdgeInsets.all(22),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? [
+                                    const Color(0xFF1E293B),
+                                    const Color(0xFF0F172A),
+                                  ]
+                                : [
+                                    const Color(0xFF18181B), // Sleek pitch dark card
+                                    const Color(0xFF27272A),
+                                  ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(28),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Top Row: Period Label & Status Pill
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
                                   provider.selectedDate != null
-                                      ? provider.selectedDateTotal
-                                      : provider.selectedMonthTotal,
-                                ),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 34,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-
-                              // Optional Budget Target Progress Indicator
-                              if (provider.currentMonthBudget != null && provider.currentMonthBudget! > 0) ...[
-                                const SizedBox(height: 10),
-                                Builder(
-                                  builder: (context) {
-                                    final budget = provider.currentMonthBudget!;
-                                    final spent = provider.selectedMonthTotal;
-                                    final ratio = (spent / budget).clamp(0.0, 1.0);
-                                    final isOver = spent > budget;
-                                    final isWarn = !isOver && (spent / budget) >= 0.8;
-
-                                    return Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(4),
-                                          child: Stack(
-                                            children: [
-                                              Container(
-                                                height: 6,
-                                                width: double.infinity,
-                                                color: Colors.white.withValues(alpha: 0.25),
-                                              ),
-                                              FractionallySizedBox(
-                                                widthFactor: ratio,
-                                                child: Container(
-                                                  height: 6,
-                                                  color: isOver
-                                                      ? Colors.redAccent
-                                                      : (isWarn ? Colors.amberAccent : Colors.white),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(height: 5),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              isOver
-                                                  ? '⚠️ Budget exceeded by ${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(spent - budget)}'
-                                                  : (isWarn
-                                                      ? '⚠️ 80%+ of limit reached'
-                                                      : '${(spent / budget * 100).toStringAsFixed(0)}% of ${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(budget)} limit'),
-                                              style: TextStyle(
-                                                color: isOver ? Colors.redAccent.shade100 : Colors.white.withValues(alpha: 0.9),
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            if (!isOver)
-                                              Text(
-                                                '${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(budget - spent)} left',
-                                                style: TextStyle(
-                                                  color: Colors.white.withValues(alpha: 0.8),
-                                                  fontSize: 11,
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ),
-                              ],
-                              const SizedBox(height: 16),
-
-                              // Bottom Controls: Quick Previous/Next Month & Active Date Filter Chip
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  // Quick Month Nav Arrows
-                                  Row(
-                                    children: [
-                                      InkWell(
-                                        onTap: () => provider.previousMonth(),
-                                        borderRadius: BorderRadius.circular(16),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(5),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withValues(alpha: 0.15),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(
-                                            Icons.chevron_left_rounded,
-                                            color: Colors.white,
-                                            size: 18,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      InkWell(
-                                        onTap: () => provider.nextMonth(),
-                                        borderRadius: BorderRadius.circular(16),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(5),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withValues(alpha: 0.15),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(
-                                            Icons.chevron_right_rounded,
-                                            color: Colors.white,
-                                            size: 18,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Text(
-                                        '${expenses.length} in period',
-                                        style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.85),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
+                                      ? 'DAILY SPENDING'
+                                      : (provider.isCurrentMonth ? "THIS MONTH'S SPENDING" : "SELECTED MONTH"),
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.75),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.1,
                                   ),
-
-                                  // If a specific day filter is active, show button to revert back to whole month
-                                  if (provider.selectedDate != null)
-                                    InkWell(
-                                      onTap: () => provider.clearDateFilter(),
-                                      borderRadius: BorderRadius.circular(14),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.2),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: const Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.close_rounded,
-                                              size: 14,
-                                              color: Colors.white,
-                                            ),
-                                            SizedBox(width: 4),
-                                            Text(
-                                              'All Month',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    )
-                                  else if (!provider.isCurrentMonth)
-                                    InkWell(
-                                      onTap: () => provider.resetToCurrentMonth(),
-                                      borderRadius: BorderRadius.circular(14),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.2),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: const Text(
-                                          'Back to Current',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
+                                ),
+                                // Status Pill
+                                InkWell(
+                                  onTap: () => _showSetBudgetDialog(context, provider),
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: hasBudget
+                                          ? (totalSpent > budget
+                                              ? AppColors.error.withValues(alpha: 0.25)
+                                              : (totalSpent / budget >= 0.8
+                                                  ? AppColors.warning.withValues(alpha: 0.25)
+                                                  : AppColors.success.withValues(alpha: 0.25)))
+                                          : Colors.white.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: hasBudget
+                                            ? (totalSpent > budget
+                                                ? AppColors.error
+                                                : (totalSpent / budget >= 0.8
+                                                    ? AppColors.warning
+                                                    : AppColors.success))
+                                            : Colors.white24,
+                                        width: 1,
                                       ),
                                     ),
-                                ],
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          hasBudget ? Icons.shield_rounded : Icons.add_circle_outline_rounded,
+                                          size: 13,
+                                          color: hasBudget
+                                              ? (totalSpent > budget
+                                                  ? Colors.redAccent.shade100
+                                                  : (totalSpent / budget >= 0.8
+                                                      ? Colors.amberAccent
+                                                      : Colors.greenAccent))
+                                              : Colors.white,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          hasBudget
+                                              ? (totalSpent > budget
+                                                  ? 'Exceeded'
+                                                  : (totalSpent / budget >= 0.8 ? '80%+ Limit' : 'On Track'))
+                                              : 'Set Target',
+                                          style: TextStyle(
+                                            color: hasBudget
+                                                ? (totalSpent > budget
+                                                    ? Colors.redAccent.shade100
+                                                    : (totalSpent / budget >= 0.8
+                                                        ? Colors.amberAccent
+                                                        : Colors.greenAccent))
+                                                : Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Total Amount
+                            Text(
+                              NumberFormat.currency(
+                                symbol: AppConstants.defaultCurrency,
+                                decimalDigits: 2,
+                              ).format(totalSpent),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 34,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+
+                            // Budget Progress Indicator (if budget set)
+                            if (hasBudget) ...[
+                              const SizedBox(height: 14),
+                              Builder(
+                                builder: (context) {
+                                  final ratio = (totalSpent / budget).clamp(0.0, 1.0);
+                                  final isOver = totalSpent > budget;
+                                  final isWarn = !isOver && (totalSpent / budget) >= 0.8;
+
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(6),
+                                        child: Stack(
+                                          children: [
+                                            Container(
+                                              height: 6,
+                                              width: double.infinity,
+                                              color: Colors.white.withValues(alpha: 0.2),
+                                            ),
+                                            FractionallySizedBox(
+                                              widthFactor: ratio,
+                                              child: Container(
+                                                height: 6,
+                                                color: isOver
+                                                    ? Colors.redAccent
+                                                    : (isWarn ? Colors.amberAccent : AppColors.success),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            isOver
+                                                ? 'Budget exceeded by ${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(totalSpent - budget)}'
+                                                : '${(ratio * 100).toStringAsFixed(0)}% of ${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(budget)} limit',
+                                            style: TextStyle(
+                                              color: isOver ? Colors.redAccent.shade100 : Colors.white70,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          if (!isOver)
+                                            Text(
+                                              '${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(budgetRemaining)} left',
+                                              style: TextStyle(
+                                                color: Colors.white.withValues(alpha: 0.85),
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // 5. 2x2 Bento Metric Grid (Inspired by the To-Do List section from Dribbble)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      child: Row(
+                        children: [
+                          // Column 1
+                          Expanded(
+                            child: Column(
+                              children: [
+                                _buildBentoCard(
+                                  theme: theme,
+                                  isDark: isDark,
+                                  bgLight: const Color(0xFFEEF2FF), // Soft Indigo
+                                  icon: Icons.receipt_long_rounded,
+                                  iconColor: const Color(0xFF4F46E5),
+                                  title: '${expenses.length}',
+                                  subtitle: 'Transactions',
+                                ),
+                                const SizedBox(height: 12),
+                                _buildBentoCard(
+                                  theme: theme,
+                                  isDark: isDark,
+                                  bgLight: const Color(0xFFDCFCE7), // Soft Mint
+                                  icon: Icons.trending_up_rounded,
+                                  iconColor: const Color(0xFF10B981),
+                                  title: NumberFormat.currency(
+                                    symbol: AppConstants.defaultCurrency,
+                                    decimalDigits: 1,
+                                  ).format(dailyAverage),
+                                  subtitle: 'Daily Avg',
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // Column 2
+                          Expanded(
+                            child: Column(
+                              children: [
+                                _buildBentoCard(
+                                  theme: theme,
+                                  isDark: isDark,
+                                  bgLight: const Color(0xFFFEF3C7), // Soft Amber
+                                  icon: Icons.account_balance_wallet_rounded,
+                                  iconColor: const Color(0xFFD97706),
+                                  title: hasBudget
+                                      ? NumberFormat.currency(
+                                          symbol: AppConstants.defaultCurrency,
+                                          decimalDigits: 0,
+                                        ).format(budgetRemaining.clamp(0, 9999999))
+                                      : 'No Limit',
+                                  subtitle: 'Budget Left',
+                                ),
+                                const SizedBox(height: 12),
+                                _buildBentoCard(
+                                  theme: theme,
+                                  isDark: isDark,
+                                  bgLight: const Color(0xFFFCE7F3), // Soft Rose
+                                  icon: Icons.local_fire_department_rounded,
+                                  iconColor: const Color(0xFFDB2777),
+                                  title: topCategoryName,
+                                  subtitle: 'Top Spending',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // 6. Category Filter Carousel ("Focus Categories")
+                  SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Categories',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              if (provider.selectedCategory != 'All')
+                                InkWell(
+                                  onTap: () => provider.setSelectedCategory('All'),
+                                  child: Text(
+                                    'Clear',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(
+                          height: 44,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            children: [
+                              _buildCreativeCategoryPill('All', provider),
+                              ...AppConstants.categories.map(
+                                (cat) => _buildCreativeCategoryPill(cat, provider),
                               ),
                             ],
                           ),
@@ -540,155 +1128,257 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                   ),
-                ),
 
-                // Category Filter Bar
-                SliverToBoxAdapter(
-                  child: Container(
-                    height: 52,
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      children: [
-                        _buildCategoryChip('All', provider),
-                        ...AppConstants.categories.map(
-                          (cat) => _buildCategoryChip(cat, provider),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Header for Recent Transactions
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Transactions',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 17,
-                              ),
-                            ),
-                            if (provider.selectedDate != null || !provider.isCurrentMonth || provider.selectedCategory != 'All')
+                  // 7. Recent Transactions Header
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                               Text(
-                                [
-                                  if (provider.selectedDate != null)
-                                    DateFormat('MMM dd').format(provider.selectedDate!)
-                                  else if (!provider.isCurrentMonth)
-                                    DateFormat('MMM yyyy').format(provider.selectedMonth),
-                                  if (provider.selectedCategory != 'All')
-                                    provider.selectedCategory,
-                                ].join(' • '),
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.w600,
+                                'Recent Transactions',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 17,
+                                  letterSpacing: -0.3,
                                 ),
                               ),
-                          ],
-                        ),
-                        if (provider.selectedCategory != 'All' || provider.selectedDate != null || !provider.isCurrentMonth)
-                          TextButton(
-                            onPressed: () {
-                              provider.setSelectedCategory('All');
-                              provider.resetToCurrentMonth();
-                            },
-                            child: const Text('Reset Filters'),
+                              if (provider.selectedDate != null || !provider.isCurrentMonth || provider.selectedCategory != 'All')
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Text(
+                                    [
+                                      if (provider.selectedDate != null)
+                                        DateFormat('MMM dd').format(provider.selectedDate!)
+                                      else if (!provider.isCurrentMonth)
+                                        DateFormat('MMM yyyy').format(provider.selectedMonth),
+                                      if (provider.selectedCategory != 'All')
+                                        provider.selectedCategory,
+                                    ].join(' • '),
+                                    style: TextStyle(
+                                      color: theme.colorScheme.primary,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Content Area: Loading, Error, Empty, or List
-                if (provider.isLoading)
-                  const SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                  )
-                else if (provider.errorMessage != null && provider.allExpenses.isEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: ErrorState(
-                      message: provider.errorMessage,
-                      onRetry: () => provider.startListening(),
-                    ),
-                  )
-                else if (expenses.isEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: EmptyState(
-                      onAction: () => _openExpenseForm(),
-                      actionLabel: 'Add Expense',
-                    ),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final expense = expenses[index];
-                          return ExpenseTile(
-                            expense: expense,
-                            onTap: () => _openExpenseForm(expense),
-                            onDelete: () => provider.deleteExpense(expense.id),
-                          );
-                        },
-                        childCount: expenses.length,
+                          if (provider.selectedCategory != 'All' || provider.selectedDate != null || !provider.isCurrentMonth)
+                            TextButton(
+                              style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                              onPressed: () {
+                                provider.setSelectedCategory('All');
+                                provider.resetToCurrentMonth();
+                              },
+                              child: const Text('Reset'),
+                            ),
+                        ],
                       ),
                     ),
                   ),
 
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 80),
-                ),
-              ],
-            ),
-          );
-        },
+                  // 8. Content Area: Loading, Error, Empty, or List
+                  if (provider.isLoading)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (provider.errorMessage != null && provider.allExpenses.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: ErrorState(
+                        message: provider.errorMessage,
+                        onRetry: () => provider.startListening(),
+                      ),
+                    )
+                  else if (expenses.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: EmptyState(
+                        onAction: () => _openExpenseForm(),
+                        actionLabel: 'Add Expense',
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final expense = expenses[index];
+                            return ExpenseTile(
+                              expense: expense,
+                              onTap: () => _openExpenseForm(expense),
+                              onDelete: () {
+                                final deletedId = expense.id;
+                                final deletedTitle = expense.title;
+                                provider.deleteExpense(deletedId);
+                                ScaffoldMessenger.of(context).clearSnackBars();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Moved "$deletedTitle" to Recycle Bin'),
+                                    behavior: SnackBarBehavior.floating,
+                                    action: SnackBarAction(
+                                      label: 'Undo',
+                                      textColor: Colors.amberAccent,
+                                      onPressed: () {
+                                        provider.restoreExpense(deletedId);
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                          childCount: expenses.length,
+                        ),
+                      ),
+                    ),
+
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 90),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildCategoryChip(String category, ExpenseProvider provider) {
+  /// 2x2 Bento Metric Card Widget
+  Widget _buildBentoCard({
+    required ThemeData theme,
+    required bool isDark,
+    required Color bgLight,
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : bgLight,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.04),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isDark ? iconColor.withValues(alpha: 0.15) : Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 18, color: iconColor),
+              ),
+              const Icon(Icons.arrow_outward_rounded, size: 14, color: Colors.grey),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: isDark ? Colors.white : const Color(0xFF18181B),
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white54 : Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Modern category pill chip
+  Widget _buildCreativeCategoryPill(String category, ExpenseProvider provider) {
     final isSelected = provider.selectedCategory == category;
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: FilterChip(
-        selected: isSelected,
-        label: Text(category),
-        onSelected: (_) => provider.setSelectedCategory(category),
-        selectedColor: theme.colorScheme.primary,
-        checkmarkColor: Colors.white,
-        labelStyle: TextStyle(
-          color: isSelected
-              ? Colors.white
-              : (isDark ? Colors.white70 : Colors.black87),
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-        ),
-        backgroundColor: isDark
-            ? theme.colorScheme.surfaceContainerHigh
-            : theme.colorScheme.surfaceContainerLow,
-        side: BorderSide(
-          color: isSelected
-              ? Colors.transparent
-              : (isDark ? Colors.white12 : Colors.grey.shade300),
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: () => provider.setSelectedCategory(category),
+        borderRadius: BorderRadius.circular(20),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (isDark ? Colors.white : const Color(0xFF18181B))
+                : (isDark ? AppColors.surfaceDark : Colors.white),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected
+                  ? Colors.transparent
+                  : (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06)),
+            ),
+            boxShadow: [
+              if (isSelected)
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (category != 'All') ...[
+                Icon(
+                  AppConstants.getCategoryIcon(category),
+                  size: 15,
+                  color: isSelected
+                      ? (isDark ? Colors.black : Colors.white)
+                      : AppConstants.getCategoryColor(category),
+                ),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                category,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected
+                      ? (isDark ? Colors.black : Colors.white)
+                      : (isDark ? Colors.white70 : AppColors.textPrimaryLight),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

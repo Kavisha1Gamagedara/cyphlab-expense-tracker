@@ -14,10 +14,18 @@ class AuthProvider extends ChangeNotifier {
     _init();
   }
 
+  bool _needsOnboarding = false;
+
   User? get user => _user;
   bool get isAuthenticated => _user != null;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  bool get needsOnboarding => _needsOnboarding;
+
+  void completeOnboarding() {
+    _needsOnboarding = false;
+    notifyListeners();
+  }
 
   void _init() {
     _user = _authService.currentUser;
@@ -41,6 +49,7 @@ class AuthProvider extends ChangeNotifier {
   }) async {
     _setLoading(true);
     _errorMessage = null;
+    _needsOnboarding = false;
     try {
       await _authService.signInWithEmail(email: email, password: password);
       _setLoading(false);
@@ -64,6 +73,7 @@ class AuthProvider extends ChangeNotifier {
   }) async {
     _setLoading(true);
     _errorMessage = null;
+    _needsOnboarding = true;
     try {
       await _authService.signUpWithEmail(
         email: email,
@@ -73,10 +83,12 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(false);
       return true;
     } on FirebaseAuthException catch (e) {
+      _needsOnboarding = false;
       _errorMessage = _getHumanReadableError(e);
       _setLoading(false);
       return false;
     } catch (e) {
+      _needsOnboarding = false;
       _errorMessage = 'An unexpected error occurred. Please try again.';
       _setLoading(false);
       return false;
@@ -105,6 +117,7 @@ class AuthProvider extends ChangeNotifier {
   /// Sign out
   Future<void> signOut() async {
     _setLoading(true);
+    _needsOnboarding = false;
     try {
       await _authService.signOut();
     } finally {
