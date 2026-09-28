@@ -105,7 +105,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   context.read<ExpenseProvider>().setSearchQuery(val);
                 },
               )
-            : const Text(AppConstants.appName),
+            : Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    margin: const EdgeInsets.only(right: 10),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      border: Border.all(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        AppConstants.appLogo,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                  const Text('Trace'),
+                ],
+              ),
         actions: [
           IconButton(
             icon: Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded),

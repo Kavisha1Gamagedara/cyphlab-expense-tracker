@@ -195,23 +195,33 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                       // Header Logo & Branding
                       Center(
                         child: Container(
-                          padding: const EdgeInsets.all(18),
+                          width: 100,
+                          height: 100,
+                          padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                            color: Colors.white,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                              width: 2,
+                              color: theme.colorScheme.primary.withValues(alpha: 0.25),
+                              width: 2.5,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                                blurRadius: 18,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
                           ),
-                          child: Icon(
-                            Icons.account_balance_wallet_rounded,
-                            size: 48,
-                            color: theme.colorScheme.primary,
+                          child: ClipOval(
+                            child: Image.asset(
+                              AppConstants.appLogo,
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       Text(
                         _isSignUp ? 'Create Account' : 'Welcome Back',
                         textAlign: TextAlign.center,
