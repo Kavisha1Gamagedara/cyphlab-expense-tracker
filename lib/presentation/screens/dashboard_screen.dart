@@ -5,6 +5,7 @@ import '../../core/constants.dart';
 import '../../data/models/expense_model.dart';
 import '../state/auth_provider.dart';
 import '../state/expense_provider.dart';
+import '../state/language_provider.dart';
 import '../widgets/calendar_selector_sheet.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_state.dart';
@@ -14,6 +15,7 @@ import '../widgets/theme_settings_sheet.dart';
 import 'expense_form.dart';
 import 'onboarding_screen.dart';
 import 'recycle_bin_screen.dart';
+import 'settings_screen.dart';
 
 /// Dashboard screen displaying monthly totals, calendar strip, bento metrics, and expense history.
 /// Styled with a creative, modern, and playful aesthetic inspired by modern mobile UI concepts.
@@ -54,18 +56,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _confirmSignOut(BuildContext context) {
     final authProvider = context.read<AuthProvider>();
+    final lang = context.read<LanguageProvider>();
     final userEmail = authProvider.user?.email ?? 'your account';
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Sign Out'),
-        content: Text('Are you sure you want to sign out from $userEmail?'),
+        title: Text(lang.getText('sign_out')),
+        content: Text('${lang.getText('sign_out_confirm')}\n($userEmail)'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(lang.getText('cancel')),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -76,7 +79,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               context.read<ExpenseProvider>().clearData();
               context.read<AuthProvider>().signOut();
             },
-            child: const Text('Sign Out'),
+            child: Text(lang.getText('sign_out')),
           ),
         ],
       ),
@@ -85,6 +88,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _showSetBudgetDialog(BuildContext context, ExpenseProvider provider) {
     final currentBudget = provider.currentMonthBudget;
+    final lang = context.read<LanguageProvider>();
     final controller = TextEditingController(
       text: currentBudget != null && currentBudget > 0
           ? currentBudget.toStringAsFixed(0)
@@ -110,7 +114,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            const Text('Monthly Target'),
+            Text(lang.getText('monthly_target')),
           ],
         ),
         content: Column(
@@ -118,7 +122,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Set a spending limit for ${DateFormat('MMMM yyyy').format(provider.selectedMonth)}:',
+              '${DateFormat('MMMM yyyy').format(provider.selectedMonth)} ${lang.getText('set_spending_limit')}:',
               style: const TextStyle(fontSize: 13),
             ),
             const SizedBox(height: 16),
@@ -143,11 +147,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 await provider.setMonthlyBudget(0);
                 if (ctx.mounted) Navigator.of(ctx).pop();
               },
-              child: const Text('Remove Limit', style: TextStyle(color: AppColors.error)),
+              child: Text(lang.getText('remove_limit'), style: const TextStyle(color: AppColors.error)),
             ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(lang.getText('cancel')),
           ),
           FilledButton(
             onPressed: () async {
@@ -155,7 +159,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               await provider.setMonthlyBudget(val);
               if (ctx.mounted) Navigator.of(ctx).pop();
             },
-            child: const Text('Save'),
+            child: Text(lang.getText('save')),
           ),
         ],
       ),
@@ -172,6 +176,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final lang = context.watch<LanguageProvider>();
 
     return Scaffold(
       body: SafeArea(
@@ -278,7 +283,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Hello, $name 👋',
+                                    '${lang.getText('hello')}, $name 👋',
                                     style: theme.textTheme.titleMedium?.copyWith(
                                       fontWeight: FontWeight.w800,
                                       fontSize: 18,
@@ -304,7 +309,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         ),
                                         const SizedBox(width: 2),
                                         Text(
-                                          'Smart Saver',
+                                          lang.getText('smart_saver'),
                                           style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w700,
@@ -351,12 +356,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       size: 22,
                                     ),
                                   ),
-                                  tooltip: 'Options',
+                                  tooltip: lang.getText('settings'),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(18),
                                   ),
                                   onSelected: (value) {
                                     switch (value) {
+                                      case 'settings':
+                                        SettingsScreen.show(context);
+                                        break;
                                       case 'calendar':
                                         CalendarSelectorSheet.show(context);
                                         break;
@@ -388,6 +396,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   },
                                   itemBuilder: (ctx) => [
                                     PopupMenuItem(
+                                      value: 'settings',
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Icon(
+                                              Icons.settings_outlined,
+                                              size: 18,
+                                              color: theme.colorScheme.primary,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            lang.getText('settings'),
+                                            style: const TextStyle(fontWeight: FontWeight.w700),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    PopupMenuItem(
                                       value: 'calendar',
                                       child: Row(
                                         children: [
@@ -404,7 +436,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             ),
                                           ),
                                           const SizedBox(width: 12),
-                                          const Text('Select Month / Day'),
+                                          Text(lang.getText('select_month_day')),
                                         ],
                                       ),
                                     ),
@@ -425,7 +457,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             ),
                                           ),
                                           const SizedBox(width: 12),
-                                          const Text('Export Report (PDF/CSV)'),
+                                          Text(lang.getText('export_report')),
                                         ],
                                       ),
                                     ),
@@ -446,7 +478,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             ),
                                           ),
                                           const SizedBox(width: 12),
-                                          const Expanded(child: Text('Recycle Bin')),
+                                          Expanded(child: Text(lang.getText('recycle_bin'))),
                                           if (count > 0)
                                             Container(
                                               padding: const EdgeInsets.symmetric(
@@ -486,7 +518,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             ),
                                           ),
                                           const SizedBox(width: 12),
-                                          const Text('Theme & Colors'),
+                                          Text(lang.getText('theme_colors')),
                                         ],
                                       ),
                                     ),
@@ -507,7 +539,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             ),
                                           ),
                                           const SizedBox(width: 12),
-                                          const Text('Onboarding Story'),
+                                          Text(lang.getText('onboarding_story')),
                                         ],
                                       ),
                                     ),
@@ -529,9 +561,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             ),
                                           ),
                                           const SizedBox(width: 12),
-                                          const Text(
-                                            'Sign Out',
-                                            style: TextStyle(color: AppColors.error),
+                                          Text(
+                                            lang.getText('sign_out'),
+                                            style: const TextStyle(color: AppColors.error),
                                           ),
                                         ],
                                       ),
@@ -575,7 +607,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             color: isDark ? Colors.white : AppColors.textPrimaryLight,
                           ),
                           decoration: InputDecoration(
-                            hintText: 'Search expenses, categories, notes...',
+                            hintText: lang.getText('search_hint'),
                             hintStyle: TextStyle(
                               fontSize: 13,
                               color: isDark ? Colors.white38 : Colors.black38,
@@ -672,7 +704,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             borderRadius: BorderRadius.circular(12),
                                           ),
                                           child: Text(
-                                            'All Month',
+                                            lang.getText('all_month'),
                                             style: TextStyle(
                                               fontSize: 11,
                                               fontWeight: FontWeight.bold,
@@ -849,8 +881,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               children: [
                                 Text(
                                   provider.selectedDate != null
-                                      ? 'DAILY SPENDING'
-                                      : (provider.isCurrentMonth ? "THIS MONTH'S SPENDING" : "SELECTED MONTH"),
+                                      ? lang.getText('daily_spending')
+                                      : (provider.isCurrentMonth
+                                          ? lang.getText('this_month_spending')
+                                          : lang.getText('selected_month')),
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.75),
                                     fontSize: 11,
@@ -902,9 +936,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         Text(
                                           hasBudget
                                               ? (totalSpent > budget
-                                                  ? 'Exceeded'
-                                                  : (totalSpent / budget >= 0.8 ? '80%+ Limit' : 'On Track'))
-                                              : 'Set Target',
+                                                  ? lang.getText('exceeded')
+                                                  : (totalSpent / budget >= 0.8
+                                                      ? lang.getText('limit_warning')
+                                                      : lang.getText('on_track')))
+                                              : lang.getText('set_target'),
                                           style: TextStyle(
                                             color: hasBudget
                                                 ? (totalSpent > budget
@@ -978,8 +1014,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         children: [
                                           Text(
                                             isOver
-                                                ? 'Budget exceeded by ${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(totalSpent - budget)}'
-                                                : '${(ratio * 100).toStringAsFixed(0)}% of ${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(budget)} limit',
+                                                ? '${lang.getText('budget_exceeded_by')} ${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(totalSpent - budget)}'
+                                                : '${(ratio * 100).toStringAsFixed(0)}% ${lang.getText('of_limit')} ${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(budget)}',
                                             style: TextStyle(
                                               color: isOver ? Colors.redAccent.shade100 : Colors.white70,
                                               fontSize: 11,
@@ -988,7 +1024,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           ),
                                           if (!isOver)
                                             Text(
-                                              '${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(budgetRemaining)} left',
+                                              '${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(budgetRemaining)} ${lang.getText('left')}',
                                               style: TextStyle(
                                                 color: Colors.white.withValues(alpha: 0.85),
                                                 fontSize: 11,
@@ -1025,7 +1061,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   icon: Icons.receipt_long_rounded,
                                   iconColor: const Color(0xFF4F46E5),
                                   title: '${expenses.length}',
-                                  subtitle: 'Transactions',
+                                  subtitle: lang.getText('transactions'),
                                 ),
                                 const SizedBox(height: 12),
                                 _buildBentoCard(
@@ -1038,7 +1074,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     symbol: AppConstants.defaultCurrency,
                                     decimalDigits: 1,
                                   ).format(dailyAverage),
-                                  subtitle: 'Daily Avg',
+                                  subtitle: lang.getText('daily_avg'),
                                 ),
                               ],
                             ),
@@ -1059,8 +1095,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           symbol: AppConstants.defaultCurrency,
                                           decimalDigits: 0,
                                         ).format(budgetRemaining.clamp(0, 9999999))
-                                      : 'No Limit',
-                                  subtitle: 'Budget Left',
+                                      : lang.getText('no_limit'),
+                                  subtitle: lang.getText('budget_left'),
                                 ),
                                 const SizedBox(height: 12),
                                 _buildBentoCard(
@@ -1069,8 +1105,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   bgLight: const Color(0xFFFCE7F3), // Soft Rose
                                   icon: Icons.local_fire_department_rounded,
                                   iconColor: const Color(0xFFDB2777),
-                                  title: topCategoryName,
-                                  subtitle: 'Top Spending',
+                                  title: topCategoryName == 'None' ? lang.getText('none') : lang.getCategory(topCategoryName),
+                                  subtitle: lang.getText('top_spending'),
                                 ),
                               ],
                             ),
@@ -1091,7 +1127,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Categories',
+                                lang.getText('categories'),
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
@@ -1101,7 +1137,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 InkWell(
                                   onTap: () => provider.setSelectedCategory('All'),
                                   child: Text(
-                                    'Clear',
+                                    lang.getText('clear'),
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
@@ -1118,9 +1154,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             scrollDirection: Axis.horizontal,
                             padding: const EdgeInsets.symmetric(horizontal: 20),
                             children: [
-                              _buildCreativeCategoryPill('All', provider),
+                              _buildCreativeCategoryPill('All', provider, lang),
                               ...AppConstants.categories.map(
-                                (cat) => _buildCreativeCategoryPill(cat, provider),
+                                (cat) => _buildCreativeCategoryPill(cat, provider, lang),
                               ),
                             ],
                           ),
@@ -1140,7 +1176,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Recent Transactions',
+                                lang.getText('recent_transactions'),
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w800,
                                   fontSize: 17,
@@ -1157,7 +1193,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       else if (!provider.isCurrentMonth)
                                         DateFormat('MMM yyyy').format(provider.selectedMonth),
                                       if (provider.selectedCategory != 'All')
-                                        provider.selectedCategory,
+                                        lang.getCategory(provider.selectedCategory),
                                     ].join(' • '),
                                     style: TextStyle(
                                       color: theme.colorScheme.primary,
@@ -1175,7 +1211,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 provider.setSelectedCategory('All');
                                 provider.resetToCurrentMonth();
                               },
-                              child: const Text('Reset'),
+                              child: Text(lang.getText('reset')),
                             ),
                         ],
                       ),
@@ -1201,7 +1237,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       hasScrollBody: false,
                       child: EmptyState(
                         onAction: () => _openExpenseForm(),
-                        actionLabel: 'Add Expense',
+                        actionLabel: lang.getText('add_expense'),
                       ),
                     )
                   else
@@ -1224,7 +1260,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     content: Text('Moved "$deletedTitle" to Recycle Bin'),
                                     behavior: SnackBarBehavior.floating,
                                     action: SnackBarAction(
-                                      label: 'Undo',
+                                      label: lang.getText('undo'),
                                       textColor: Colors.amberAccent,
                                       onPressed: () {
                                         provider.restoreExpense(deletedId);
@@ -1323,9 +1359,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// Modern category pill chip
-  Widget _buildCreativeCategoryPill(String category, ExpenseProvider provider) {
+  Widget _buildCreativeCategoryPill(String category, ExpenseProvider provider, [LanguageProvider? lang]) {
     final isSelected = provider.selectedCategory == category;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final label = category == 'All'
+        ? (lang?.getText('all') ?? 'All')
+        : (lang?.getCategory(category) ?? category);
 
     return Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -1368,7 +1407,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(width: 6),
               ],
               Text(
-                category,
+                label,
                 style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,

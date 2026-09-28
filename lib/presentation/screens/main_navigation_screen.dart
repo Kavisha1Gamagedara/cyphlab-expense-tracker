@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/expense_provider.dart';
+import '../state/language_provider.dart';
 import 'analytics_screen.dart';
 import 'dashboard_screen.dart';
 import 'expense_form.dart';
@@ -42,6 +43,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final lang = context.watch<LanguageProvider>();
 
     return Scaffold(
       body: IndexedStack(
@@ -69,9 +71,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             borderRadius: BorderRadius.circular(18),
           ),
           icon: const Icon(Icons.add_rounded, size: 22),
-          label: const Text(
-            'Add Expense',
-            style: TextStyle(
+          label: Text(
+            lang.getText('add_expense'),
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
               letterSpacing: 0.4,
@@ -114,12 +116,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             NavigationDestination(
               icon: const Icon(Icons.home_outlined),
               selectedIcon: Icon(Icons.home_rounded, color: theme.colorScheme.primary),
-              label: 'Home',
+              label: lang.getText('home'),
             ),
             NavigationDestination(
               icon: const Icon(Icons.pie_chart_outline_rounded),
               selectedIcon: Icon(Icons.pie_chart_rounded, color: theme.colorScheme.primary),
-              label: 'Analytics',
+              label: lang.getText('analytics'),
             ),
           ],
         ),
