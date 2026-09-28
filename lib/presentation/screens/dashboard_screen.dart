@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../state/expense_provider.dart';
+import '../state/theme_provider.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_state.dart';
 import '../widgets/expense_tile.dart';
@@ -47,6 +48,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final themeProvider = context.watch<ThemeProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -75,6 +77,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         actions: [
           IconButton(
             icon: Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded),
+            tooltip: _isSearching ? 'Close Search' : 'Search',
             onPressed: () {
               setState(() {
                 _isSearching = !_isSearching;
@@ -83,6 +86,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   context.read<ExpenseProvider>().setSearchQuery('');
                 }
               });
+            },
+          ),
+          IconButton(
+            icon: Icon(
+              isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+            ),
+            tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+            onPressed: () {
+              themeProvider.toggleTheme(!isDark);
             },
           ),
         ],
