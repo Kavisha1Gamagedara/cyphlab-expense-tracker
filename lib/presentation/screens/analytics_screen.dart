@@ -5,6 +5,7 @@ import '../../core/constants.dart';
 import '../state/expense_provider.dart';
 import '../widgets/calendar_selector_sheet.dart';
 import '../widgets/monthly_analytics_card.dart';
+import '../widgets/monthly_budget_card.dart';
 import '../widgets/theme_settings_sheet.dart';
 
 /// Dedicated Analytics Dashboard screen showing in-depth monthly/daily spending insights.
@@ -218,6 +219,16 @@ class AnalyticsScreen extends StatelessWidget {
                     ),
                   ),
 
+                  // Monthly Budgeting / Limit Card with Line Chart Progression
+                  MonthlyBudgetCard(
+                    spentAmount: totalSpent,
+                    budgetAmount: provider.currentMonthBudget,
+                    periodTitle: periodTitle,
+                    cumulativeSpending: provider.cumulativeExpensesInSelectedMonth,
+                    totalDays: provider.daysInSelectedMonth,
+                    onSetBudget: () => _showSetBudgetDialog(context, provider),
+                  ),
+
                   // Main Monthly Analytics Card (Interactive Pie & Bar Charts)
                   MonthlyAnalyticsCard(
                     categoryBreakdown: breakdown,
@@ -232,6 +243,92 @@ class AnalyticsScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  void _showSetBudgetDialog(BuildContext context, ExpenseProvider provider) {
+    final currentBudget = provider.currentMonthBudget;
+    final controller = TextEditingController(
+      text: currentBudget != null && currentBudget > 0 ? currentBudget.toStringAsFixed(0) : '',
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.savings_rounded,
+                color: Theme.of(context).colorScheme.primary,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text('Monthly Budget Target'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Set a spending limit for ${DateFormat('MMMM yyyy').format(provider.selectedMonth)}. We\'ll warn you as you approach it.',
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: 'Budget Amount',
+                prefixText: '${AppConstants.defaultCurrency} ',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                hintText: 'e.g. 500',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final text = controller.text.trim();
+              if (text.isEmpty) return;
+              final parsed = double.tryParse(text);
+              if (parsed != null && parsed >= 0) {
+                Navigator.of(ctx).pop();
+                await provider.setMonthlyBudget(parsed);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        parsed > 0
+                            ? 'Budget target of ${AppConstants.defaultCurrency}${parsed.toStringAsFixed(0)} saved!'
+                            : 'Budget limit cleared.',
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      backgroundColor: AppColors.success,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Save Limit'),
+          ),
+        ],
+      ),
     );
   }
 

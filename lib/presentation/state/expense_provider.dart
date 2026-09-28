@@ -9,6 +9,8 @@ class ExpenseProvider extends ChangeNotifier {
   StreamSubscription<List<Expense>>? _expenseSubscription;
 
   List<Expense> _expenses = [];
+  Map<String, double> _budgets = {}; // 'yyyy_MM' -> budget
+  StreamSubscription<Map<String, double>>? _budgetSubscription;
   bool _isLoading = false;
   String? _errorMessage;
   String _selectedCategory = 'All';
@@ -27,6 +29,53 @@ class ExpenseProvider extends ChangeNotifier {
   String get searchQuery => _searchQuery;
   DateTime get selectedMonth => _selectedMonth;
   DateTime? get selectedDate => _selectedDate;
+
+  /// Key for budget map: 'yyyy_MM'
+  String get _currentMonthKey =>
+      '${_selectedMonth.year}_${_selectedMonth.month.toString().padLeft(2, '0')}';
+
+  /// Budget limit for the currently selected month (or null if none set)
+  double? get currentMonthBudget => _budgets[_currentMonthKey];
+
+  /// Total days in the selected month
+  int get daysInSelectedMonth => DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month + 1,
+        0,
+      ).day;
+
+  /// Daily expenses for each day of the selected month (dayNumber to dayExpenseTotal)
+  Map<int, double> get dailyExpensesInSelectedMonth {
+    final map = {for (int i = 1; i <= daysInSelectedMonth; i++) i: 0.0};
+    for (final exp in _expenses) {
+      if (exp.date.year == _selectedMonth.year && exp.date.month == _selectedMonth.month) {
+        final day = exp.date.day;
+        if (map.containsKey(day)) {
+          map[day] = (map[day] ?? 0.0) + exp.amount;
+        }
+      }
+    }
+    return map;
+  }
+
+  /// Cumulative spending progression for each day of the selected month (dayNumber to cumulativeSum)
+  Map<int, double> get cumulativeExpensesInSelectedMonth {
+    final daily = dailyExpensesInSelectedMonth;
+    final map = <int, double>{};
+    double running = 0.0;
+    final now = DateTime.now();
+    final maxDay = (_selectedMonth.year == now.year && _selectedMonth.month == now.month)
+        ? now.day
+        : (_selectedMonth.isBefore(DateTime(now.year, now.month)) ? daysInSelectedMonth : 0);
+
+    for (int day = 1; day <= daysInSelectedMonth; day++) {
+      if (day <= maxDay || maxDay == 0 && daily[day]! > 0) {
+        running += daily[day] ?? 0.0;
+        map[day] = running;
+      }
+    }
+    return map;
+  }
 
   /// Check if the selected month is the current calendar month
   bool get isCurrentMonth {
@@ -116,14 +165,14 @@ class ExpenseProvider extends ChangeNotifier {
     return map;
   }
 
-  /// Subscribe to Firestore expense stream
+  /// Subscribe to Firestore expense & budget streams
   void startListening() {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      debugPrint('[ExpenseProvider] Subscribing to getExpensesStream...');
+      debugPrint('[ExpenseProvider] Subscribing to getExpensesStream & getBudgetsStream...');
       _expenseSubscription?.cancel();
       _expenseSubscription = _firebaseService.getExpensesStream().listen(
         (expensesList) {
@@ -140,11 +189,40 @@ class ExpenseProvider extends ChangeNotifier {
           notifyListeners();
         },
       );
+
+      _budgetSubscription?.cancel();
+      _budgetSubscription = _firebaseService.getBudgetsStream().listen(
+        (budgetMap) {
+          debugPrint('[ExpenseProvider] Received ${budgetMap.length} budgets from Firestore');
+          _budgets = budgetMap;
+          notifyListeners();
+        },
+        onError: (error) {
+          debugPrint('[ExpenseProvider] Budget stream error: $error');
+        },
+      );
     } catch (e) {
       debugPrint('[ExpenseProvider] Exception during startListening: $e');
       _isLoading = false;
       _errorMessage = 'Firebase error: $e';
       notifyListeners();
+    }
+  }
+
+  /// Set or update the budget limit for the selected month
+  Future<bool> setMonthlyBudget(double amount) async {
+    try {
+      await _firebaseService.setBudget(
+        year: _selectedMonth.year,
+        month: _selectedMonth.month,
+        amount: amount,
+      );
+      _budgets[_currentMonthKey] = amount;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('[ExpenseProvider] Error setting budget: $e');
+      return false;
     }
   }
 
@@ -250,7 +328,10 @@ class ExpenseProvider extends ChangeNotifier {
   void clearData() {
     _expenseSubscription?.cancel();
     _expenseSubscription = null;
+    _budgetSubscription?.cancel();
+    _budgetSubscription = null;
     _expenses = [];
+    _budgets = {};
     _isLoading = false;
     _errorMessage = null;
     final now = DateTime.now();
@@ -264,6 +345,7 @@ class ExpenseProvider extends ChangeNotifier {
   @override
   void dispose() {
     _expenseSubscription?.cancel();
+    _budgetSubscription?.cancel();
     super.dispose();
   }
 }

@@ -97,4 +97,38 @@ class FirebaseService {
       throw Exception('Failed to delete expense: $e');
     }
   }
+
+  /// Reference to budgets subcollection: users/{userId}/budgets
+  CollectionReference<Map<String, dynamic>> _userBudgetsRef(String userId) {
+    return _firestore.collection('users').doc(userId).collection('budgets');
+  }
+
+  /// Save or update spending limit/budget for a given year and month (key: 'yyyy_MM')
+  Future<void> setBudget({required int year, required int month, required double amount}) async {
+    final uid = _currentUserId;
+    if (uid == null) return;
+    final key = '${year}_${month.toString().padLeft(2, '0')}';
+    await _userBudgetsRef(uid).doc(key).set({
+      'amount': amount,
+      'year': year,
+      'month': month,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Real-time stream of all user budgets mapped by 'yyyy_MM' -> limit amount
+  Stream<Map<String, double>> getBudgetsStream() {
+    final uid = _currentUserId;
+    if (uid == null) return Stream.value({});
+    return _userBudgetsRef(uid).snapshots().map((snapshot) {
+      final map = <String, double>{};
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        if (data['amount'] is num) {
+          map[doc.id] = (data['amount'] as num).toDouble();
+        }
+      }
+      return map;
+    });
+  }
 }
