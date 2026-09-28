@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../state/auth_provider.dart';
 import '../state/expense_provider.dart';
+import '../widgets/calendar_selector_sheet.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_state.dart';
 import '../widgets/expense_tile.dart';
@@ -120,6 +121,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
           ),
           IconButton(
+            icon: const Icon(Icons.calendar_month_rounded),
+            tooltip: 'Filter by Month / Date',
+            onPressed: () {
+              CalendarSelectorSheet.show(context);
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.palette_outlined),
             tooltip: 'Theme & Colors',
             onPressed: () {
@@ -135,11 +143,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       body: Consumer<ExpenseProvider>(
         builder: (context, provider, child) {
-          final monthlyTotal = NumberFormat.currency(
-            symbol: AppConstants.defaultCurrency,
-            decimalDigits: 2,
-          ).format(provider.currentMonthTotal);
-
           final expenses = provider.filteredExpenses;
 
           return RefreshIndicator(
@@ -204,9 +207,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             );
                           },
                         ),
+                        // Dynamic Spending Card with Calendar Selector
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(24),
+                          padding: const EdgeInsets.all(22),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
@@ -230,72 +234,216 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Top Bar: Period Label and Quick Nav + Calendar Trigger
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                              Text(
-                                'This Month\'s Spending',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.85),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  DateFormat('MMMM yyyy').format(DateTime.now()),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
+                                  Row(
+                                    children: [
+                                      Text(
+                                        provider.selectedDate != null
+                                            ? 'Daily Spending'
+                                            : (provider.isCurrentMonth
+                                                ? "This Month's Spending"
+                                                : "Selected Month"),
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(alpha: 0.9),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
+                                  // Month / Date Chip with interactive tap to open Calendar
+                                  InkWell(
+                                    onTap: () => CalendarSelectorSheet.show(context),
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.22),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: Colors.white.withValues(alpha: 0.3),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.calendar_month_rounded,
+                                            size: 14,
+                                            color: Colors.white,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            provider.selectedDate != null
+                                                ? DateFormat('MMM dd, yyyy')
+                                                    .format(provider.selectedDate!)
+                                                : DateFormat('MMM yyyy')
+                                                    .format(provider.selectedMonth),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 3),
+                                          const Icon(
+                                            Icons.arrow_drop_down_rounded,
+                                            size: 18,
+                                            color: Colors.white,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            monthlyTotal,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 34,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.receipt_rounded,
-                                size: 16,
-                                color: Colors.white.withValues(alpha: 0.8),
-                              ),
-                              const SizedBox(width: 6),
+                              const SizedBox(height: 14),
+
+                              // Total Amount Display
                               Text(
-                                '${provider.allExpenses.length} Total Records',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                  fontSize: 13,
+                                NumberFormat.currency(
+                                  symbol: AppConstants.defaultCurrency,
+                                  decimalDigits: 2,
+                                ).format(
+                                  provider.selectedDate != null
+                                      ? provider.selectedDateTotal
+                                      : provider.selectedMonthTotal,
                                 ),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 34,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Bottom Controls: Quick Previous/Next Month & Active Date Filter Chip
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  // Quick Month Nav Arrows
+                                  Row(
+                                    children: [
+                                      InkWell(
+                                        onTap: () => provider.previousMonth(),
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(5),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(alpha: 0.15),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.chevron_left_rounded,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      InkWell(
+                                        onTap: () => provider.nextMonth(),
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(5),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(alpha: 0.15),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.chevron_right_rounded,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        '${expenses.length} in period',
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(alpha: 0.85),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  // If a specific day filter is active, show button to revert back to whole month
+                                  if (provider.selectedDate != null)
+                                    InkWell(
+                                      onTap: () => provider.clearDateFilter(),
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.close_rounded,
+                                              size: 14,
+                                              color: Colors.white,
+                                            ),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              'All Month',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    )
+                                  else if (!provider.isCurrentMonth)
+                                    InkWell(
+                                      onTap: () => provider.resetToCurrentMonth(),
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const Text(
+                                          'Back to Current',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
 
                 // Category Filter Bar
                 SliverToBoxAdapter(
@@ -322,19 +470,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Recent Transactions',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 17,
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Transactions',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 17,
+                              ),
+                            ),
+                            if (provider.selectedDate != null || !provider.isCurrentMonth || provider.selectedCategory != 'All')
+                              Text(
+                                [
+                                  if (provider.selectedDate != null)
+                                    DateFormat('MMM dd').format(provider.selectedDate!)
+                                  else if (!provider.isCurrentMonth)
+                                    DateFormat('MMM yyyy').format(provider.selectedMonth),
+                                  if (provider.selectedCategory != 'All')
+                                    provider.selectedCategory,
+                                ].join(' • '),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                          ],
                         ),
-                        if (provider.selectedCategory != 'All')
+                        if (provider.selectedCategory != 'All' || provider.selectedDate != null || !provider.isCurrentMonth)
                           TextButton(
                             onPressed: () {
                               provider.setSelectedCategory('All');
+                              provider.resetToCurrentMonth();
                             },
-                            child: const Text('Clear Filter'),
+                            child: const Text('Reset Filters'),
                           ),
                       ],
                     ),
