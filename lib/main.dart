@@ -5,6 +5,7 @@ import 'core/constants.dart';
 import 'firebase_options.dart';
 import 'presentation/screens/auth_screen.dart';
 import 'presentation/screens/main_navigation_screen.dart';
+import 'presentation/screens/onboarding_screen.dart';
 import 'presentation/state/auth_provider.dart';
 import 'presentation/state/expense_provider.dart';
 import 'presentation/state/theme_provider.dart';
@@ -44,7 +45,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-/// Dynamic gate that decides whether to show the Dashboard or the Auth screen.
+/// Dynamic gate that decides whether to show the Dashboard, Onboarding, or Auth screen.
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -52,8 +53,12 @@ class AuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
 
-    // If authenticated, show the main navigation screen (Home & Analytics tabs)
+    // If authenticated:
     if (authProvider.isAuthenticated) {
+      // If newly registered, show the 3 random onboarding screens first
+      if (authProvider.needsOnboarding) {
+        return const OnboardingScreen();
+      }
       return const MainNavigationScreen();
     }
 
