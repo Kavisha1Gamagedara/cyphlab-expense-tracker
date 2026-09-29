@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -89,7 +90,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final lang = context.read<LanguageProvider>();
     final controller = TextEditingController(
       text: currentBudget != null && currentBudget > 0
-          ? currentBudget.toStringAsFixed(0)
+          ? (currentBudget % 1 == 0
+              ? currentBudget.toStringAsFixed(0)
+              : currentBudget.toStringAsFixed(2))
           : '',
     );
 
@@ -132,7 +135,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               autofocus: true,
               decoration: InputDecoration(
                 prefixText: '${AppConstants.defaultCurrency} ',
-                hintText: 'e.g. 1500',
+                hintText: 'e.g. 1500.00',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -158,7 +161,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           FilledButton(
             onPressed: () async {
-              final val = double.tryParse(controller.text.trim()) ?? 0;
+              final text = controller.text.trim().replaceAll(',', '.');
+              final val = double.tryParse(text) ?? 0;
               await provider.setMonthlyBudget(val);
               if (ctx.mounted) Navigator.of(ctx).pop();
             },
@@ -1222,8 +1226,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         children: [
                                           Text(
                                             isOver
-                                                ? '${lang.getText('budget_exceeded_by')} ${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(totalSpent - budget)}'
-                                                : '${(ratio * 100).toStringAsFixed(0)}% ${lang.getText('of_limit')} ${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(budget)}',
+                                                ? '${lang.getText('budget_exceeded_by')} ${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: (totalSpent - budget) % 1 == 0 ? 0 : 2).format(totalSpent - budget)}'
+                                                : '${(ratio * 100).toStringAsFixed(0)}% ${lang.getText('of_limit')} ${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: budget % 1 == 0 ? 0 : 2).format(budget)}',
                                             style: TextStyle(
                                               color: isOver
                                                   ? Colors.redAccent.shade100
@@ -1234,7 +1238,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           ),
                                           if (!isOver)
                                             Text(
-                                              '${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(budgetRemaining)} ${lang.getText('left')}',
+                                              '${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: budgetRemaining % 1 == 0 ? 0 : 2).format(budgetRemaining)} ${lang.getText('left')}',
                                               style: TextStyle(
                                                 color: Colors.white.withValues(
                                                   alpha: 0.85,
@@ -1312,7 +1316,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   title: hasBudget
                                       ? NumberFormat.currency(
                                           symbol: AppConstants.defaultCurrency,
-                                          decimalDigits: 0,
+                                          decimalDigits: budgetRemaining % 1 == 0 ? 0 : 2,
                                         ).format(
                                           budgetRemaining.clamp(0, 9999999),
                                         )
@@ -1494,22 +1498,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               final deletedId = expense.id;
                               final deletedTitle = expense.title;
                               provider.deleteExpense(deletedId);
-                              ScaffoldMessenger.of(context).clearSnackBars();
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              final messenger = ScaffoldMessenger.of(context);
+                              messenger.clearSnackBars();
+
+                              Timer? autoDismissTimer;
+
+                              messenger.showSnackBar(
                                 SnackBar(
                                   content: Text(
                                     'Moved "$deletedTitle" to Recycle Bin',
                                   ),
                                   behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 3),
+                                  dismissDirection: DismissDirection.horizontal,
+                                  onVisible: () {
+                                    autoDismissTimer?.cancel();
+                                    autoDismissTimer = Timer(const Duration(seconds: 3), () {
+                                      try {
+                                        messenger.hideCurrentSnackBar();
+                                      } catch (_) {}
+                                    });
+                                  },
                                   action: SnackBarAction(
                                     label: lang.getText('undo'),
                                     textColor: Colors.amberAccent,
                                     onPressed: () {
+                                      autoDismissTimer?.cancel();
                                       provider.restoreExpense(deletedId);
+                                      messenger.hideCurrentSnackBar();
                                     },
                                   ),
                                 ),
-                              );
+                              ).closed.then((_) {
+                                autoDismissTimer?.cancel();
+                              });
                             },
                           );
                         }, childCount: expenses.length),
