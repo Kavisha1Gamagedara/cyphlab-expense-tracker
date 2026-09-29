@@ -1206,7 +1206,7 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  /// Notifications & Alerts Card with master toggle, daily reminder timer, budget warnings, and test alert
+  /// Notifications & Alerts Card with master toggle, daily reminder timer, and budget warnings
   Widget _buildNotificationCard(
     BuildContext context,
     LanguageProvider lang,

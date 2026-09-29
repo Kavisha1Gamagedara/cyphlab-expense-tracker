@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// App-wide constants, strings, colors, and static configuration.
 class AppConstants {
-  static const String appName = 'Trace Expense Tracker';
+  static const String appName = 'TRACE';
   static const String appLogo = 'assets/images/logo.png';
   static const String expensesCollection = 'expenses';
   static const String biometricLockKey = 'biometric_lock_enabled';
