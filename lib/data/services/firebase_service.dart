@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/constants.dart';
+import '../models/budget_model.dart';
 import '../models/expense_model.dart';
 
 /// Service responsible for Firestore operations (CRUD), scoped to the authenticated user.
@@ -174,20 +175,63 @@ class FirebaseService {
       'year': year,
       'month': month,
       'updatedAt': FieldValue.serverTimestamp(),
-    });
+    }, SetOptions(merge: true));
   }
 
-  /// Real-time stream of all user budgets mapped by 'yyyy_MM' -> limit amount
-  Stream<Map<String, double>> getBudgetsStream() {
+  /// Save or update category spending limit for a given year, month, and category
+  Future<void> setCategoryBudget({
+    required int year,
+    required int month,
+    required String category,
+    required double amount,
+  }) async {
+    final uid = _currentUserId;
+    if (uid == null) return;
+    final key = '${year}_${month.toString().padLeft(2, '0')}';
+    if (amount <= 0) {
+      await _userBudgetsRef(uid).doc(key).set({
+        'categoryBudgets': {
+          category: FieldValue.delete(),
+        },
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } else {
+      await _userBudgetsRef(uid).doc(key).set({
+        'year': year,
+        'month': month,
+        'categoryBudgets': {
+          category: amount,
+        },
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
+  }
+
+  /// Real-time stream of all user budgets mapped by 'yyyy_MM' -> MonthBudgetData
+  Stream<Map<String, MonthBudgetData>> getBudgetsStream() {
     final uid = _currentUserId;
     if (uid == null) return Stream.value({});
     return _userBudgetsRef(uid).snapshots().map((snapshot) {
-      final map = <String, double>{};
+      final map = <String, MonthBudgetData>{};
       for (final doc in snapshot.docs) {
         final data = doc.data();
+        double amount = 0.0;
         if (data['amount'] is num) {
-          map[doc.id] = (data['amount'] as num).toDouble();
+          amount = (data['amount'] as num).toDouble();
         }
+        final catBudgets = <String, double>{};
+        if (data['categoryBudgets'] is Map) {
+          final raw = data['categoryBudgets'] as Map;
+          raw.forEach((k, v) {
+            if (v is num && v > 0) {
+              catBudgets[k.toString()] = v.toDouble();
+            }
+          });
+        }
+        map[doc.id] = MonthBudgetData(
+          totalBudget: amount,
+          categoryBudgets: catBudgets,
+        );
       }
       return map;
     });

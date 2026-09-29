@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../state/expense_provider.dart';
+import '../widgets/budget_settings_sheet.dart';
 import '../widgets/calendar_selector_sheet.dart';
 import '../widgets/export_report_sheet.dart';
 import '../widgets/monthly_analytics_card.dart';
@@ -347,6 +348,8 @@ class AnalyticsScreen extends StatelessWidget {
                     periodTitle: periodTitle,
                     cumulativeSpending: provider.cumulativeExpensesInSelectedMonth,
                     totalDays: provider.daysInSelectedMonth,
+                    categoryBudgets: provider.currentMonthCategoryBudgets,
+                    categoryBreakdown: breakdown,
                     onSetBudget: () => _showSetBudgetDialog(context, provider),
                   ),
 
@@ -460,95 +463,7 @@ class AnalyticsScreen extends StatelessWidget {
   }
 
   void _showSetBudgetDialog(BuildContext context, ExpenseProvider provider) {
-    final currentBudget = provider.currentMonthBudget;
-    final controller = TextEditingController(
-      text: currentBudget != null && currentBudget > 0
-          ? (currentBudget % 1 == 0
-              ? currentBudget.toStringAsFixed(0)
-              : currentBudget.toStringAsFixed(2))
-          : '',
-    );
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                Icons.savings_rounded,
-                color: Theme.of(context).colorScheme.primary,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text('Monthly Budget Target'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Set a spending limit for ${DateFormat('MMMM yyyy').format(provider.selectedMonth)}. We\'ll warn you as you approach it.',
-              style: const TextStyle(fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: 'Budget Amount',
-                prefixText: '${AppConstants.defaultCurrency} ',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                hintText: 'e.g. 500.00',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final text = controller.text.trim().replaceAll(',', '.');
-              if (text.isEmpty) return;
-              final parsed = double.tryParse(text);
-              if (parsed != null && parsed >= 0) {
-                Navigator.of(ctx).pop();
-                await provider.setMonthlyBudget(parsed);
-                if (context.mounted) {
-                  final budgetDisplay = parsed % 1 == 0 ? parsed.toStringAsFixed(0) : parsed.toStringAsFixed(2);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        parsed > 0
-                            ? 'Budget target of ${AppConstants.defaultCurrency}$budgetDisplay saved!'
-                            : 'Budget limit cleared.',
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                      duration: const Duration(seconds: 3),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      backgroundColor: AppColors.success,
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text('Save Limit'),
-          ),
-        ],
-      ),
-    );
+    BudgetSettingsSheet.show(context);
   }
 
   Widget _buildMetricCard({

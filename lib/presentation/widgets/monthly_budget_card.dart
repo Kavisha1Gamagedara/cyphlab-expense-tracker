@@ -11,6 +11,8 @@ class MonthlyBudgetCard extends StatelessWidget {
   final Map<int, double> cumulativeSpending;
   final int totalDays;
   final VoidCallback onSetBudget;
+  final Map<String, double> categoryBudgets;
+  final Map<String, double> categoryBreakdown;
 
   const MonthlyBudgetCard({
     super.key,
@@ -20,6 +22,8 @@ class MonthlyBudgetCard extends StatelessWidget {
     required this.cumulativeSpending,
     required this.totalDays,
     required this.onSetBudget,
+    this.categoryBudgets = const {},
+    this.categoryBreakdown = const {},
   });
 
   @override
@@ -393,6 +397,102 @@ class MonthlyBudgetCard extends StatelessWidget {
               ),
             ],
           ),
+
+          // Category Limits Progress (if any configured)
+          if (categoryBudgets.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Category Budget Limits',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                InkWell(
+                  onTap: onSetBudget,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Text(
+                      'Manage Limits',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ...categoryBudgets.entries.map((entry) {
+              final cat = entry.key;
+              final catLimit = entry.value;
+              final catSpent = categoryBreakdown[cat] ?? 0.0;
+              final catRatio = (catSpent / catLimit).clamp(0.0, 1.0);
+              final isCatOver = catSpent > catLimit;
+              final isCatWarn = !isCatOver && (catSpent / catLimit >= 0.80);
+              final catStatusColor = isCatOver
+                  ? AppColors.error
+                  : (isCatWarn ? AppColors.warning : AppColors.success);
+              final catColor = AppConstants.getCategoryColor(cat);
+              final catIcon = AppConstants.getCategoryIcon(cat);
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.02),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isCatOver
+                          ? AppColors.error.withValues(alpha: 0.3)
+                          : (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.04)),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Icon(catIcon, size: 16, color: catColor),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              cat,
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                            ),
+                          ),
+                          Text(
+                            '${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: catSpent % 1 == 0 ? 0 : 2).format(catSpent)} / ${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: catLimit % 1 == 0 ? 0 : 2).format(catLimit)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: isCatOver ? AppColors.error : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: catRatio,
+                          backgroundColor: isDark ? Colors.white10 : Colors.black12,
+                          valueColor: AlwaysStoppedAnimation(catStatusColor),
+                          minHeight: 5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
         ],
       ),
     );

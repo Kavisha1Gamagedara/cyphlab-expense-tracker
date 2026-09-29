@@ -49,6 +49,15 @@ class AppTranslations {
       'monthly_target': 'Monthly Target',
       'set_spending_limit': 'Set a spending limit for',
       'remove_limit': 'Remove Limit',
+      'overall_budget': 'Overall Budget',
+      'category_budgets': 'Category Budgets',
+      'set_category_limit': 'Set Category Limit',
+      'all_categories': 'All Categories',
+      'no_limit_set': 'No limit set',
+      'total_category_budget': 'Allocated to Categories',
+      'category_budget_saved': 'Category budget saved!',
+      'category_budget_removed': 'Category budget removed',
+      'category_limit': 'Category Limit',
       
       // Options Menu
       'select_month_day': 'Select Month / Day',
@@ -147,6 +156,15 @@ class AppTranslations {
       'monthly_target': 'මාසික ඉලක්කය',
       'set_spending_limit': 'සඳහා වියදම් සීමාවක් සකසන්න',
       'remove_limit': 'සීමාව ඉවත් කරන්න',
+      'overall_budget': 'සමස්ත අයවැය',
+      'category_budgets': 'කාණ්ඩ අයවැය සීමා',
+      'set_category_limit': 'කාණ්ඩ සීමාව සකසන්න',
+      'all_categories': 'සියලුම කාණ්ඩ',
+      'no_limit_set': 'සීමාවක් සකසා නැත',
+      'total_category_budget': 'කාණ්ඩ සඳහා වෙන් කළ මුදල',
+      'category_budget_saved': 'කාණ්ඩ අයවැය සුරැකිණි!',
+      'category_budget_removed': 'කාණ්ඩ අයවැය ඉවත් කරන ලදී',
+      'category_limit': 'කාණ්ඩ සීමාව',
       
       // Options Menu
       'select_month_day': 'මාසය / දිනය තෝරන්න',
