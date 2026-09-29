@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../state/auth_provider.dart';
+import '../state/currency_provider.dart';
 import '../state/expense_provider.dart';
 import '../state/language_provider.dart';
 import '../state/theme_provider.dart';
+import '../widgets/currency_picker_sheet.dart';
 import '../widgets/export_report_sheet.dart';
 import '../widgets/theme_settings_sheet.dart';
 import 'onboarding_screen.dart';
@@ -60,6 +62,7 @@ class SettingsScreen extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final lang = context.watch<LanguageProvider>();
     final themeProvider = context.watch<ThemeProvider>();
+    final currencyProvider = context.watch<CurrencyProvider>();
     final auth = context.watch<AuthProvider>();
     final expenseProvider = context.watch<ExpenseProvider>();
     final user = auth.user;
@@ -134,7 +137,20 @@ class SettingsScreen extends StatelessWidget {
 
           const SizedBox(height: 28),
 
-          // 3. Data & Management Section
+          // 3. Currency Preferences Section (Searchable Dropdown)
+          _buildSectionHeader(
+            theme: theme,
+            title: lang.getText('currency'),
+            subtitle: lang.getText('currency_subtitle'),
+            icon: Icons.currency_exchange_rounded,
+            iconColor: const Color(0xFF0EA5E9),
+          ),
+          const SizedBox(height: 12),
+          _buildCurrencyCard(context, lang, currencyProvider, isDark, theme),
+
+          const SizedBox(height: 28),
+
+          // 4. Data & Management Section
           _buildSectionHeader(
             theme: theme,
             title: lang.getText('data_management'),
@@ -513,6 +529,144 @@ class SettingsScreen extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  /// Currency Preferences Card with dropdown arrow to open searchable sheet
+  Widget _buildCurrencyCard(
+    BuildContext context,
+    LanguageProvider lang,
+    CurrencyProvider currencyProvider,
+    bool isDark,
+    ThemeData theme,
+  ) {
+    final currency = currencyProvider.currentCurrency;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(24),
+        child: InkWell(
+          onTap: () => CurrencyPickerSheet.show(context),
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            child: Row(
+              children: [
+                // Flag / Emblem in circle
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white10
+                        : const Color(0xFF0EA5E9).withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      currency.flag,
+                      style: const TextStyle(fontSize: 24),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+
+                // Currency Code & Name
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            currency.code,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16.5,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Symbol Pill
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              currency.symbol,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        currency.name,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? Colors.white60 : Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Dropdown Button Indicator
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white10 : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.05),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Change',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white70 : Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 18,
+                        color: isDark ? Colors.white70 : Colors.black87,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

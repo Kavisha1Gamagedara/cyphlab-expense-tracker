@@ -5,7 +5,8 @@ class AppConstants {
   static const String appName = 'Trace Expense Tracker';
   static const String appLogo = 'assets/images/logo.png';
   static const String expensesCollection = 'expenses';
-  static const String defaultCurrency = '\$';
+  static String currencySymbol = '\$';
+  static String get defaultCurrency => currencySymbol;
 
   // Category names
   static const String categoryFood = 'Food & Dining';

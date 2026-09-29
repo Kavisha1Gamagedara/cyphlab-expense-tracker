@@ -7,6 +7,7 @@ import 'presentation/screens/auth_screen.dart';
 import 'presentation/screens/main_navigation_screen.dart';
 import 'presentation/screens/onboarding_screen.dart';
 import 'presentation/state/auth_provider.dart';
+import 'presentation/state/currency_provider.dart';
 import 'presentation/state/expense_provider.dart';
 import 'presentation/state/language_provider.dart';
 import 'presentation/state/theme_provider.dart';
@@ -28,11 +29,12 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
+        ChangeNotifierProvider(create: (_) => CurrencyProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ExpenseProvider()),
       ],
-      child: Consumer2<ThemeProvider, LanguageProvider>(
-        builder: (context, themeProvider, languageProvider, child) {
+      child: Consumer3<ThemeProvider, LanguageProvider, CurrencyProvider>(
+        builder: (context, themeProvider, languageProvider, currencyProvider, child) {
           return MaterialApp(
             title: AppConstants.appName,
             debugShowCheckedModeBanner: false,

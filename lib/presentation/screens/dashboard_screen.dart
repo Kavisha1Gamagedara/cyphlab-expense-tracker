@@ -71,9 +71,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Text(lang.getText('cancel')),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.error,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () {
               Navigator.of(ctx).pop();
               context.read<ExpenseProvider>().clearData();
@@ -128,7 +126,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: controller,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               autofocus: true,
               decoration: InputDecoration(
                 prefixText: '${AppConstants.defaultCurrency} ',
@@ -147,7 +147,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 await provider.setMonthlyBudget(0);
                 if (ctx.mounted) Navigator.of(ctx).pop();
               },
-              child: Text(lang.getText('remove_limit'), style: const TextStyle(color: AppColors.error)),
+              child: Text(
+                lang.getText('remove_limit'),
+                style: const TextStyle(color: AppColors.error),
+              ),
             ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
@@ -169,7 +172,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// Get the 7 days of the week starting Sunday
   List<DateTime> _getWeekDays(DateTime refDate) {
     final startOfWeek = refDate.subtract(Duration(days: refDate.weekday % 7));
-    return List.generate(7, (i) => DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day + i));
+    return List.generate(
+      7,
+      (i) => DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day + i),
+    );
   }
 
   @override
@@ -185,7 +191,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           builder: (context, provider, child) {
             final expenses = provider.filteredExpenses;
             final user = context.watch<AuthProvider>().user;
-            final name = (user?.displayName != null && user!.displayName!.isNotEmpty)
+            final name =
+                (user?.displayName != null && user!.displayName!.isNotEmpty)
                 ? user.displayName
                 : (user?.email?.split('@').first ?? 'Friend');
 
@@ -200,7 +207,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             // Daily average calculation
             final daysInMonth = provider.daysInSelectedMonth;
-            final dailyAverage = totalSpent / (provider.selectedDate != null ? 1 : daysInMonth);
+            final dailyAverage =
+                totalSpent / (provider.selectedDate != null ? 1 : daysInMonth);
 
             // Find top category
             final breakdown = provider.monthCategoryBreakdown;
@@ -221,10 +229,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             } else if (_weekReferenceDate.year != provider.selectedMonth.year ||
                 _weekReferenceDate.month != provider.selectedMonth.month) {
               final now = DateTime.now();
-              if (now.year == provider.selectedMonth.year && now.month == provider.selectedMonth.month) {
+              if (now.year == provider.selectedMonth.year &&
+                  now.month == provider.selectedMonth.month) {
                 _weekReferenceDate = now;
               } else {
-                _weekReferenceDate = DateTime(provider.selectedMonth.year, provider.selectedMonth.month, 1);
+                _weekReferenceDate = DateTime(
+                  provider.selectedMonth.year,
+                  provider.selectedMonth.month,
+                  1,
+                );
               }
             }
 
@@ -254,14 +267,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   gradient: LinearGradient(
                                     colors: [
                                       theme.colorScheme.primary,
-                                      theme.colorScheme.primary.withValues(alpha: 0.6),
+                                      theme.colorScheme.primary.withValues(
+                                        alpha: 0.6,
+                                      ),
                                     ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: theme.colorScheme.primary.withValues(alpha: 0.25),
+                                      color: theme.colorScheme.primary
+                                          .withValues(alpha: 0.25),
                                       blurRadius: 10,
                                       offset: const Offset(0, 4),
                                     ),
@@ -269,7 +285,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                                 child: Center(
                                   child: Text(
-                                    (name != null && name.isNotEmpty ? name[0] : 'U').toUpperCase(),
+                                    (name != null && name.isNotEmpty
+                                            ? name[0]
+                                            : 'U')
+                                        .toUpperCase(),
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 18,
@@ -284,19 +303,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 children: [
                                   Text(
                                     '${lang.getText('hello')}, $name 👋',
-                                    style: theme.textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 18,
-                                      letterSpacing: -0.3,
-                                    ),
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 18,
+                                          letterSpacing: -0.3,
+                                        ),
                                   ),
                                   const SizedBox(height: 2),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: isDark
-                                          ? AppColors.primary.withValues(alpha: 0.2)
-                                          : AppColors.primary.withValues(alpha: 0.1),
+                                          ? AppColors.primary.withValues(
+                                              alpha: 0.2,
+                                            )
+                                          : AppColors.primary.withValues(
+                                              alpha: 0.1,
+                                            ),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Row(
@@ -330,7 +357,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               final count = provider.recycledCount;
                               return Container(
                                 decoration: BoxDecoration(
-                                  color: isDark ? AppColors.surfaceDark : Colors.white,
+                                  color: isDark
+                                      ? AppColors.surfaceDark
+                                      : Colors.white,
                                   shape: BoxShape.circle,
                                   border: Border.all(
                                     color: isDark
@@ -339,7 +368,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
+                                      color: Colors.black.withValues(
+                                        alpha: isDark ? 0.25 : 0.05,
+                                      ),
                                       blurRadius: 10,
                                       offset: const Offset(0, 3),
                                     ),
@@ -352,7 +383,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     backgroundColor: AppColors.error,
                                     child: Icon(
                                       Icons.more_vert_rounded,
-                                      color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                                      color: isDark
+                                          ? Colors.white
+                                          : AppColors.textPrimaryLight,
                                       size: 22,
                                     ),
                                   ),
@@ -379,7 +412,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       case 'recycle_bin':
                                         Navigator.of(context).push(
                                           MaterialPageRoute(
-                                            builder: (_) => const RecycleBinScreen(),
+                                            builder: (_) =>
+                                                const RecycleBinScreen(),
                                           ),
                                         );
                                         break;
@@ -402,8 +436,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           Container(
                                             padding: const EdgeInsets.all(6),
                                             decoration: BoxDecoration(
-                                              color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                                              borderRadius: BorderRadius.circular(8),
+                                              color: theme.colorScheme.primary
+                                                  .withValues(alpha: 0.12),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: Icon(
                                               Icons.settings_outlined,
@@ -414,7 +450,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           const SizedBox(width: 12),
                                           Text(
                                             lang.getText('settings'),
-                                            style: const TextStyle(fontWeight: FontWeight.w700),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -426,8 +464,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           Container(
                                             padding: const EdgeInsets.all(6),
                                             decoration: BoxDecoration(
-                                              color: AppColors.primary.withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(8),
+                                              color: AppColors.primary
+                                                  .withValues(alpha: 0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: const Icon(
                                               Icons.calendar_month_rounded,
@@ -436,7 +476,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             ),
                                           ),
                                           const SizedBox(width: 12),
-                                          Text(lang.getText('select_month_day')),
+                                          Text(
+                                            lang.getText('select_month_day'),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -447,8 +489,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           Container(
                                             padding: const EdgeInsets.all(6),
                                             decoration: BoxDecoration(
-                                              color: AppColors.primary.withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(8),
+                                              color: AppColors.primary
+                                                  .withValues(alpha: 0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: const Icon(
                                               Icons.file_download_outlined,
@@ -468,8 +512,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           Container(
                                             padding: const EdgeInsets.all(6),
                                             decoration: BoxDecoration(
-                                              color: AppColors.warning.withValues(alpha: 0.12),
-                                              borderRadius: BorderRadius.circular(8),
+                                              color: AppColors.warning
+                                                  .withValues(alpha: 0.12),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: const Icon(
                                               Icons.delete_outline_rounded,
@@ -478,16 +524,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             ),
                                           ),
                                           const SizedBox(width: 12),
-                                          Expanded(child: Text(lang.getText('recycle_bin'))),
+                                          Expanded(
+                                            child: Text(
+                                              lang.getText('recycle_bin'),
+                                            ),
+                                          ),
                                           if (count > 0)
                                             Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 7,
-                                                vertical: 2,
-                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 7,
+                                                    vertical: 2,
+                                                  ),
                                               decoration: BoxDecoration(
                                                 color: AppColors.error,
-                                                borderRadius: BorderRadius.circular(10),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
                                               ),
                                               child: Text(
                                                 '$count',
@@ -508,8 +560,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           Container(
                                             padding: const EdgeInsets.all(6),
                                             decoration: BoxDecoration(
-                                              color: AppColors.accent.withValues(alpha: 0.12),
-                                              borderRadius: BorderRadius.circular(8),
+                                              color: AppColors.accent
+                                                  .withValues(alpha: 0.12),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: const Icon(
                                               Icons.palette_outlined,
@@ -529,8 +583,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           Container(
                                             padding: const EdgeInsets.all(6),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFFC084FC).withValues(alpha: 0.15),
-                                              borderRadius: BorderRadius.circular(8),
+                                              color: const Color(
+                                                0xFFC084FC,
+                                              ).withValues(alpha: 0.15),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: const Icon(
                                               Icons.auto_awesome_rounded,
@@ -539,7 +596,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             ),
                                           ),
                                           const SizedBox(width: 12),
-                                          Text(lang.getText('onboarding_story')),
+                                          Text(
+                                            lang.getText('onboarding_story'),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -551,8 +610,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           Container(
                                             padding: const EdgeInsets.all(6),
                                             decoration: BoxDecoration(
-                                              color: AppColors.error.withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(8),
+                                              color: AppColors.error.withValues(
+                                                alpha: 0.1,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: const Icon(
                                               Icons.logout_rounded,
@@ -563,7 +625,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           const SizedBox(width: 12),
                                           Text(
                                             lang.getText('sign_out'),
-                                            style: const TextStyle(color: AppColors.error),
+                                            style: const TextStyle(
+                                              color: AppColors.error,
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -581,7 +645,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   // 2. Sleek Stadium Search Field
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 6,
+                      ),
                       child: Container(
                         height: 48,
                         decoration: BoxDecoration(
@@ -594,7 +661,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                              color: Colors.black.withValues(
+                                alpha: isDark ? 0.2 : 0.03,
+                              ),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
@@ -604,7 +673,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           controller: _searchController,
                           style: TextStyle(
                             fontSize: 14,
-                            color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.textPrimaryLight,
                           ),
                           decoration: InputDecoration(
                             hintText: lang.getText('search_hint'),
@@ -619,7 +690,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             suffixIcon: _searchController.text.isNotEmpty
                                 ? IconButton(
-                                    icon: const Icon(Icons.close_rounded, size: 18),
+                                    icon: const Icon(
+                                      Icons.close_rounded,
+                                      size: 18,
+                                    ),
                                     onPressed: () {
                                       _searchController.clear();
                                       provider.setSearchQuery('');
@@ -628,7 +702,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   )
                                 : null,
                             border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 14,
+                            ),
                           ),
                           onChanged: (val) {
                             provider.setSearchQuery(val);
@@ -655,7 +731,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                              color: Colors.black.withValues(
+                                alpha: isDark ? 0.2 : 0.03,
+                              ),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -668,21 +746,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 InkWell(
-                                  onTap: () => CalendarSelectorSheet.show(context),
+                                  onTap: () =>
+                                      CalendarSelectorSheet.show(context),
                                   borderRadius: BorderRadius.circular(10),
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 2,
+                                    ),
                                     child: Row(
                                       children: [
                                         Text(
-                                          DateFormat('MMMM yyyy').format(provider.selectedMonth),
-                                          style: theme.textTheme.titleMedium?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                          ),
+                                          DateFormat(
+                                            'MMMM yyyy',
+                                          ).format(provider.selectedMonth),
+                                          style: theme.textTheme.titleMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
                                         ),
                                         const SizedBox(width: 4),
-                                        const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+                                        const Icon(
+                                          Icons.keyboard_arrow_down_rounded,
+                                          size: 20,
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -698,10 +786,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             horizontal: 8,
                                             vertical: 4,
                                           ),
-                                          margin: const EdgeInsets.only(right: 8),
+                                          margin: const EdgeInsets.only(
+                                            right: 8,
+                                          ),
                                           decoration: BoxDecoration(
-                                            color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                                            borderRadius: BorderRadius.circular(12),
+                                            color: theme.colorScheme.primary
+                                                .withValues(alpha: 0.12),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
                                           ),
                                           child: Text(
                                             lang.getText('all_month'),
@@ -715,28 +808,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                     IconButton(
                                       visualDensity: VisualDensity.compact,
-                                      icon: const Icon(Icons.chevron_left_rounded, size: 22),
+                                      icon: const Icon(
+                                        Icons.chevron_left_rounded,
+                                        size: 22,
+                                      ),
                                       tooltip: 'Previous week',
                                       onPressed: () {
                                         setState(() {
-                                          _weekReferenceDate = _weekReferenceDate.subtract(const Duration(days: 7));
-                                          if (_weekReferenceDate.month != provider.selectedMonth.month ||
-                                              _weekReferenceDate.year != provider.selectedMonth.year) {
-                                            provider.setSelectedMonth(DateTime(_weekReferenceDate.year, _weekReferenceDate.month));
+                                          _weekReferenceDate =
+                                              _weekReferenceDate.subtract(
+                                                const Duration(days: 7),
+                                              );
+                                          if (_weekReferenceDate.month !=
+                                                  provider
+                                                      .selectedMonth
+                                                      .month ||
+                                              _weekReferenceDate.year !=
+                                                  provider.selectedMonth.year) {
+                                            provider.setSelectedMonth(
+                                              DateTime(
+                                                _weekReferenceDate.year,
+                                                _weekReferenceDate.month,
+                                              ),
+                                            );
                                           }
                                         });
                                       },
                                     ),
                                     IconButton(
                                       visualDensity: VisualDensity.compact,
-                                      icon: const Icon(Icons.chevron_right_rounded, size: 22),
+                                      icon: const Icon(
+                                        Icons.chevron_right_rounded,
+                                        size: 22,
+                                      ),
                                       tooltip: 'Next week',
                                       onPressed: () {
                                         setState(() {
-                                          _weekReferenceDate = _weekReferenceDate.add(const Duration(days: 7));
-                                          if (_weekReferenceDate.month != provider.selectedMonth.month ||
-                                              _weekReferenceDate.year != provider.selectedMonth.year) {
-                                            provider.setSelectedMonth(DateTime(_weekReferenceDate.year, _weekReferenceDate.month));
+                                          _weekReferenceDate =
+                                              _weekReferenceDate.add(
+                                                const Duration(days: 7),
+                                              );
+                                          if (_weekReferenceDate.month !=
+                                                  provider
+                                                      .selectedMonth
+                                                      .month ||
+                                              _weekReferenceDate.year !=
+                                                  provider.selectedMonth.year) {
+                                            provider.setSelectedMonth(
+                                              DateTime(
+                                                _weekReferenceDate.year,
+                                                _weekReferenceDate.month,
+                                              ),
+                                            );
                                           }
                                         });
                                       },
@@ -751,17 +874,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: weekDays.map((dayDate) {
-                                final isSelected = provider.selectedDate != null &&
-                                    provider.selectedDate!.year == dayDate.year &&
-                                    provider.selectedDate!.month == dayDate.month &&
+                                final isSelected =
+                                    provider.selectedDate != null &&
+                                    provider.selectedDate!.year ==
+                                        dayDate.year &&
+                                    provider.selectedDate!.month ==
+                                        dayDate.month &&
                                     provider.selectedDate!.day == dayDate.day;
 
-                                final isToday = dayDate.year == DateTime.now().year &&
+                                final isToday =
+                                    dayDate.year == DateTime.now().year &&
                                     dayDate.month == DateTime.now().month &&
                                     dayDate.day == DateTime.now().day;
 
-                                final hasExpenses = (provider.dailyExpensesInSelectedMonth[dayDate.day] ?? 0) > 0;
-                                final isDifferentMonth = dayDate.month != provider.selectedMonth.month;
+                                final hasExpenses =
+                                    (provider
+                                            .dailyExpensesInSelectedMonth[dayDate
+                                            .day] ??
+                                        0) >
+                                    0;
+                                final isDifferentMonth =
+                                    dayDate.month !=
+                                    provider.selectedMonth.month;
 
                                 return Expanded(
                                   child: GestureDetector(
@@ -773,17 +907,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       }
                                     },
                                     child: AnimatedContainer(
-                                      duration: const Duration(milliseconds: 200),
-                                      margin: const EdgeInsets.symmetric(horizontal: 2.5),
-                                      padding: const EdgeInsets.symmetric(vertical: 10),
+                                      duration: const Duration(
+                                        milliseconds: 200,
+                                      ),
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 2.5,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 10,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: isSelected
-                                            ? (isDark ? Colors.white : const Color(0xFF18181B))
+                                            ? (isDark
+                                                  ? Colors.white
+                                                  : const Color(0xFF18181B))
                                             : Colors.transparent,
                                         borderRadius: BorderRadius.circular(20),
                                         border: isToday && !isSelected
                                             ? Border.all(
-                                                color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                                                color: theme.colorScheme.primary
+                                                    .withValues(alpha: 0.5),
                                                 width: 1.5,
                                               )
                                             : null,
@@ -792,15 +935,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Text(
-                                            DateFormat('E').format(dayDate)[0], // S, M, T, W, T, F, S
+                                            DateFormat('E').format(
+                                              dayDate,
+                                            )[0], // S, M, T, W, T, F, S
                                             style: TextStyle(
                                               fontSize: 11,
                                               fontWeight: FontWeight.w600,
                                               color: isSelected
-                                                  ? (isDark ? Colors.black87 : Colors.white)
+                                                  ? (isDark
+                                                        ? Colors.black87
+                                                        : Colors.white)
                                                   : (isDifferentMonth
-                                                      ? Colors.grey.shade400
-                                                      : (isDark ? Colors.white54 : Colors.grey.shade600)),
+                                                        ? Colors.grey.shade400
+                                                        : (isDark
+                                                              ? Colors.white54
+                                                              : Colors
+                                                                    .grey
+                                                                    .shade600)),
                                             ),
                                           ),
                                           const SizedBox(height: 6),
@@ -808,12 +959,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             '${dayDate.day}',
                                             style: TextStyle(
                                               fontSize: 14,
-                                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w800
+                                                  : FontWeight.w600,
                                               color: isSelected
-                                                  ? (isDark ? Colors.black : Colors.white)
+                                                  ? (isDark
+                                                        ? Colors.black
+                                                        : Colors.white)
                                                   : (isDifferentMonth
-                                                      ? Colors.grey.shade400
-                                                      : (isDark ? Colors.white : AppColors.textPrimaryLight)),
+                                                        ? Colors.grey.shade400
+                                                        : (isDark
+                                                              ? Colors.white
+                                                              : AppColors
+                                                                    .textPrimaryLight)),
                                             ),
                                           ),
                                           const SizedBox(height: 4),
@@ -824,10 +982,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
                                               color: isSelected
-                                                  ? (isDark ? theme.colorScheme.primary : Colors.amberAccent)
+                                                  ? (isDark
+                                                        ? theme
+                                                              .colorScheme
+                                                              .primary
+                                                        : Colors.amberAccent)
                                                   : (hasExpenses
-                                                      ? theme.colorScheme.primary
-                                                      : Colors.transparent),
+                                                        ? theme
+                                                              .colorScheme
+                                                              .primary
+                                                        : Colors.transparent),
                                             ),
                                           ),
                                         ],
@@ -846,7 +1010,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   // 4. Hero Spending & Budget Progress Card (High-Contrast Dribbble Style)
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 6,
+                      ),
                       child: Container(
                         padding: const EdgeInsets.all(22),
                         decoration: BoxDecoration(
@@ -857,7 +1024,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     const Color(0xFF0F172A),
                                   ]
                                 : [
-                                    const Color(0xFF18181B), // Sleek pitch dark card
+                                    const Color(
+                                      0xFF18181B,
+                                    ), // Sleek pitch dark card
                                     const Color(0xFF27272A),
                                   ],
                             begin: Alignment.topLeft,
@@ -883,8 +1052,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   provider.selectedDate != null
                                       ? lang.getText('daily_spending')
                                       : (provider.isCurrentMonth
-                                          ? lang.getText('this_month_spending')
-                                          : lang.getText('selected_month')),
+                                            ? lang.getText(
+                                                'this_month_spending',
+                                              )
+                                            : lang.getText('selected_month')),
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.75),
                                     fontSize: 11,
@@ -894,26 +1065,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                                 // Status Pill
                                 InkWell(
-                                  onTap: () => _showSetBudgetDialog(context, provider),
+                                  onTap: () =>
+                                      _showSetBudgetDialog(context, provider),
                                   borderRadius: BorderRadius.circular(20),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: hasBudget
                                           ? (totalSpent > budget
-                                              ? AppColors.error.withValues(alpha: 0.25)
-                                              : (totalSpent / budget >= 0.8
-                                                  ? AppColors.warning.withValues(alpha: 0.25)
-                                                  : AppColors.success.withValues(alpha: 0.25)))
-                                          : Colors.white.withValues(alpha: 0.15),
+                                                ? AppColors.error.withValues(
+                                                    alpha: 0.25,
+                                                  )
+                                                : (totalSpent / budget >= 0.8
+                                                      ? AppColors.warning
+                                                            .withValues(
+                                                              alpha: 0.25,
+                                                            )
+                                                      : AppColors.success
+                                                            .withValues(
+                                                              alpha: 0.25,
+                                                            )))
+                                          : Colors.white.withValues(
+                                              alpha: 0.15,
+                                            ),
                                       borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
                                         color: hasBudget
                                             ? (totalSpent > budget
-                                                ? AppColors.error
-                                                : (totalSpent / budget >= 0.8
-                                                    ? AppColors.warning
-                                                    : AppColors.success))
+                                                  ? AppColors.error
+                                                  : (totalSpent / budget >= 0.8
+                                                        ? AppColors.warning
+                                                        : AppColors.success))
                                             : Colors.white24,
                                         width: 1,
                                       ),
@@ -922,32 +1107,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(
-                                          hasBudget ? Icons.shield_rounded : Icons.add_circle_outline_rounded,
+                                          hasBudget
+                                              ? Icons.shield_rounded
+                                              : Icons
+                                                    .add_circle_outline_rounded,
                                           size: 13,
                                           color: hasBudget
                                               ? (totalSpent > budget
-                                                  ? Colors.redAccent.shade100
-                                                  : (totalSpent / budget >= 0.8
-                                                      ? Colors.amberAccent
-                                                      : Colors.greenAccent))
+                                                    ? Colors.redAccent.shade100
+                                                    : (totalSpent / budget >=
+                                                              0.8
+                                                          ? Colors.amberAccent
+                                                          : Colors.greenAccent))
                                               : Colors.white,
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
                                           hasBudget
                                               ? (totalSpent > budget
-                                                  ? lang.getText('exceeded')
-                                                  : (totalSpent / budget >= 0.8
-                                                      ? lang.getText('limit_warning')
-                                                      : lang.getText('on_track')))
+                                                    ? lang.getText('exceeded')
+                                                    : (totalSpent / budget >=
+                                                              0.8
+                                                          ? lang.getText(
+                                                              'limit_warning',
+                                                            )
+                                                          : lang.getText(
+                                                              'on_track',
+                                                            )))
                                               : lang.getText('set_target'),
                                           style: TextStyle(
                                             color: hasBudget
                                                 ? (totalSpent > budget
-                                                    ? Colors.redAccent.shade100
-                                                    : (totalSpent / budget >= 0.8
-                                                        ? Colors.amberAccent
-                                                        : Colors.greenAccent))
+                                                      ? Colors
+                                                            .redAccent
+                                                            .shade100
+                                                      : (totalSpent / budget >=
+                                                                0.8
+                                                            ? Colors.amberAccent
+                                                            : Colors
+                                                                  .greenAccent))
                                                 : Colors.white,
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,
@@ -980,12 +1178,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               const SizedBox(height: 14),
                               Builder(
                                 builder: (context) {
-                                  final ratio = (totalSpent / budget).clamp(0.0, 1.0);
+                                  final ratio = (totalSpent / budget).clamp(
+                                    0.0,
+                                    1.0,
+                                  );
                                   final isOver = totalSpent > budget;
-                                  final isWarn = !isOver && (totalSpent / budget) >= 0.8;
+                                  final isWarn =
+                                      !isOver && (totalSpent / budget) >= 0.8;
 
                                   return Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       ClipRRect(
                                         borderRadius: BorderRadius.circular(6),
@@ -994,7 +1197,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             Container(
                                               height: 6,
                                               width: double.infinity,
-                                              color: Colors.white.withValues(alpha: 0.2),
+                                              color: Colors.white.withValues(
+                                                alpha: 0.2,
+                                              ),
                                             ),
                                             FractionallySizedBox(
                                               widthFactor: ratio,
@@ -1002,7 +1207,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                 height: 6,
                                                 color: isOver
                                                     ? Colors.redAccent
-                                                    : (isWarn ? Colors.amberAccent : AppColors.success),
+                                                    : (isWarn
+                                                          ? Colors.amberAccent
+                                                          : AppColors.success),
                                               ),
                                             ),
                                           ],
@@ -1010,14 +1217,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                       const SizedBox(height: 6),
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
                                             isOver
                                                 ? '${lang.getText('budget_exceeded_by')} ${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(totalSpent - budget)}'
                                                 : '${(ratio * 100).toStringAsFixed(0)}% ${lang.getText('of_limit')} ${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(budget)}',
                                             style: TextStyle(
-                                              color: isOver ? Colors.redAccent.shade100 : Colors.white70,
+                                              color: isOver
+                                                  ? Colors.redAccent.shade100
+                                                  : Colors.white70,
                                               fontSize: 11,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -1026,7 +1236,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             Text(
                                               '${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(budgetRemaining)} ${lang.getText('left')}',
                                               style: TextStyle(
-                                                color: Colors.white.withValues(alpha: 0.85),
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.85,
+                                                ),
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w600,
                                               ),
@@ -1047,7 +1259,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   // 5. 2x2 Bento Metric Grid (Inspired by the To-Do List section from Dribbble)
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 8,
+                      ),
                       child: Row(
                         children: [
                           // Column 1
@@ -1057,7 +1272,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 _buildBentoCard(
                                   theme: theme,
                                   isDark: isDark,
-                                  bgLight: const Color(0xFFEEF2FF), // Soft Indigo
+                                  bgLight: const Color(
+                                    0xFFEEF2FF,
+                                  ), // Soft Indigo
                                   icon: Icons.receipt_long_rounded,
                                   iconColor: const Color(0xFF4F46E5),
                                   title: '${expenses.length}',
@@ -1087,14 +1304,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 _buildBentoCard(
                                   theme: theme,
                                   isDark: isDark,
-                                  bgLight: const Color(0xFFFEF3C7), // Soft Amber
+                                  bgLight: const Color(
+                                    0xFFFEF3C7,
+                                  ), // Soft Amber
                                   icon: Icons.account_balance_wallet_rounded,
                                   iconColor: const Color(0xFFD97706),
                                   title: hasBudget
                                       ? NumberFormat.currency(
                                           symbol: AppConstants.defaultCurrency,
                                           decimalDigits: 0,
-                                        ).format(budgetRemaining.clamp(0, 9999999))
+                                        ).format(
+                                          budgetRemaining.clamp(0, 9999999),
+                                        )
                                       : lang.getText('no_limit'),
                                   subtitle: lang.getText('budget_left'),
                                 ),
@@ -1105,7 +1326,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   bgLight: const Color(0xFFFCE7F3), // Soft Rose
                                   icon: Icons.local_fire_department_rounded,
                                   iconColor: const Color(0xFFDB2777),
-                                  title: topCategoryName == 'None' ? lang.getText('none') : lang.getCategory(topCategoryName),
+                                  title: topCategoryName == 'None'
+                                      ? lang.getText('none')
+                                      : lang.getCategory(topCategoryName),
                                   subtitle: lang.getText('top_spending'),
                                 ),
                               ],
@@ -1135,7 +1358,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                               if (provider.selectedCategory != 'All')
                                 InkWell(
-                                  onTap: () => provider.setSelectedCategory('All'),
+                                  onTap: () =>
+                                      provider.setSelectedCategory('All'),
                                   child: Text(
                                     lang.getText('clear'),
                                     style: TextStyle(
@@ -1156,7 +1380,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             children: [
                               _buildCreativeCategoryPill('All', provider, lang),
                               ...AppConstants.categories.map(
-                                (cat) => _buildCreativeCategoryPill(cat, provider, lang),
+                                (cat) => _buildCreativeCategoryPill(
+                                  cat,
+                                  provider,
+                                  lang,
+                                ),
                               ),
                             ],
                           ),
@@ -1183,17 +1411,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   letterSpacing: -0.3,
                                 ),
                               ),
-                              if (provider.selectedDate != null || !provider.isCurrentMonth || provider.selectedCategory != 'All')
+                              if (provider.selectedDate != null ||
+                                  !provider.isCurrentMonth ||
+                                  provider.selectedCategory != 'All')
                                 Padding(
                                   padding: const EdgeInsets.only(top: 2),
                                   child: Text(
                                     [
                                       if (provider.selectedDate != null)
-                                        DateFormat('MMM dd').format(provider.selectedDate!)
+                                        DateFormat(
+                                          'MMM dd',
+                                        ).format(provider.selectedDate!)
                                       else if (!provider.isCurrentMonth)
-                                        DateFormat('MMM yyyy').format(provider.selectedMonth),
+                                        DateFormat(
+                                          'MMM yyyy',
+                                        ).format(provider.selectedMonth),
                                       if (provider.selectedCategory != 'All')
-                                        lang.getCategory(provider.selectedCategory),
+                                        lang.getCategory(
+                                          provider.selectedCategory,
+                                        ),
                                     ].join(' • '),
                                     style: TextStyle(
                                       color: theme.colorScheme.primary,
@@ -1204,9 +1440,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                             ],
                           ),
-                          if (provider.selectedCategory != 'All' || provider.selectedDate != null || !provider.isCurrentMonth)
+                          if (provider.selectedCategory != 'All' ||
+                              provider.selectedDate != null ||
+                              !provider.isCurrentMonth)
                             TextButton(
-                              style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                              style: TextButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                              ),
                               onPressed: () {
                                 provider.setSelectedCategory('All');
                                 provider.resetToCurrentMonth();
@@ -1224,7 +1464,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       hasScrollBody: false,
                       child: Center(child: CircularProgressIndicator()),
                     )
-                  else if (provider.errorMessage != null && provider.allExpenses.isEmpty)
+                  else if (provider.errorMessage != null &&
+                      provider.allExpenses.isEmpty)
                     SliverFillRemaining(
                       hasScrollBody: false,
                       child: ErrorState(
@@ -1244,41 +1485,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final expense = expenses[index];
-                            return ExpenseTile(
-                              expense: expense,
-                              onTap: () => _openExpenseForm(expense),
-                              onDelete: () {
-                                final deletedId = expense.id;
-                                final deletedTitle = expense.title;
-                                provider.deleteExpense(deletedId);
-                                ScaffoldMessenger.of(context).clearSnackBars();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Moved "$deletedTitle" to Recycle Bin'),
-                                    behavior: SnackBarBehavior.floating,
-                                    action: SnackBarAction(
-                                      label: lang.getText('undo'),
-                                      textColor: Colors.amberAccent,
-                                      onPressed: () {
-                                        provider.restoreExpense(deletedId);
-                                      },
-                                    ),
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final expense = expenses[index];
+                          return ExpenseTile(
+                            expense: expense,
+                            onTap: () => _openExpenseForm(expense),
+                            onDelete: () {
+                              final deletedId = expense.id;
+                              final deletedTitle = expense.title;
+                              provider.deleteExpense(deletedId);
+                              ScaffoldMessenger.of(context).clearSnackBars();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Moved "$deletedTitle" to Recycle Bin',
                                   ),
-                                );
-                              },
-                            );
-                          },
-                          childCount: expenses.length,
-                        ),
+                                  behavior: SnackBarBehavior.floating,
+                                  action: SnackBarAction(
+                                    label: lang.getText('undo'),
+                                    textColor: Colors.amberAccent,
+                                    onPressed: () {
+                                      provider.restoreExpense(deletedId);
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        }, childCount: expenses.length),
                       ),
                     ),
 
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 90),
-                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 90)),
                 ],
               ),
             );
@@ -1324,12 +1562,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: isDark ? iconColor.withValues(alpha: 0.15) : Colors.white,
+                  color: isDark
+                      ? iconColor.withValues(alpha: 0.15)
+                      : Colors.white,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, size: 18, color: iconColor),
               ),
-              const Icon(Icons.arrow_outward_rounded, size: 14, color: Colors.grey),
+              const Icon(
+                Icons.arrow_outward_rounded,
+                size: 14,
+                color: Colors.grey,
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -1359,7 +1603,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// Modern category pill chip
-  Widget _buildCreativeCategoryPill(String category, ExpenseProvider provider, [LanguageProvider? lang]) {
+  Widget _buildCreativeCategoryPill(
+    String category,
+    ExpenseProvider provider, [
+    LanguageProvider? lang,
+  ]) {
     final isSelected = provider.selectedCategory == category;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final label = category == 'All'
@@ -1382,7 +1630,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             border: Border.all(
               color: isSelected
                   ? Colors.transparent
-                  : (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06)),
+                  : (isDark
+                        ? Colors.white10
+                        : Colors.black.withValues(alpha: 0.06)),
             ),
             boxShadow: [
               if (isSelected)
