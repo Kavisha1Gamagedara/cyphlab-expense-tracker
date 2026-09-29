@@ -108,6 +108,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           indicatorColor: theme.colorScheme.primary.withValues(alpha: 0.15),
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           onDestinationSelected: (index) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
             setState(() {
               _currentIndex = index;
             });

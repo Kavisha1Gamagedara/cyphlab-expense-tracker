@@ -47,6 +47,7 @@ class RecycleBinScreen extends StatelessWidget {
                     backgroundColor:
                         success ? AppColors.success : AppColors.error,
                     behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 3),
                   ),
                 );
               }
@@ -96,6 +97,7 @@ class RecycleBinScreen extends StatelessWidget {
                     backgroundColor:
                         success ? AppColors.success : AppColors.error,
                     behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 3),
                   ),
                 );
               }
@@ -248,6 +250,7 @@ class RecycleBinScreen extends StatelessWidget {
                                         ? AppColors.success
                                         : AppColors.error,
                                     behavior: SnackBarBehavior.floating,
+                                    duration: const Duration(seconds: 3),
                                   ),
                                 );
                               }

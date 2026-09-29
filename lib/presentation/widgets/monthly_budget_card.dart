@@ -188,7 +188,7 @@ class MonthlyBudgetCard extends StatelessWidget {
                     Text(
                       NumberFormat.currency(
                         symbol: AppConstants.defaultCurrency,
-                        decimalDigits: 0,
+                        decimalDigits: budget % 1 == 0 ? 0 : 2,
                       ).format(budget),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
@@ -258,8 +258,8 @@ class MonthlyBudgetCard extends StatelessWidget {
                 ),
                 Text(
                   isExceeded
-                      ? '+${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(spentAmount - budget)} over'
-                      : '${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: 0).format(budget - spentAmount)} left',
+                      ? '+${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: (spentAmount - budget) % 1 == 0 ? 0 : 2).format(spentAmount - budget)} over'
+                      : '${NumberFormat.currency(symbol: AppConstants.defaultCurrency, decimalDigits: (budget - spentAmount) % 1 == 0 ? 0 : 2).format(budget - spentAmount)} left',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,

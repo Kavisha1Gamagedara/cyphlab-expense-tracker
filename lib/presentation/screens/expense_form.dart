@@ -157,6 +157,7 @@ class _ExpenseFormState extends State<ExpenseForm> {
               content: Text('Expense moved to Recycle Bin (kept for 5 days)'),
               backgroundColor: AppColors.success,
               behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
             ),
           );
           Navigator.of(context).pop();
@@ -166,6 +167,7 @@ class _ExpenseFormState extends State<ExpenseForm> {
               content: Text(provider.errorMessage ?? 'Failed to delete expense'),
               backgroundColor: AppColors.error,
               behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
             ),
           );
         }

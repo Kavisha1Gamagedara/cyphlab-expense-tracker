@@ -344,7 +344,7 @@ class _MonthlyAnalyticsCardState extends State<MonthlyAnalyticsCard> {
                 Text(
                   NumberFormat.currency(
                     symbol: AppConstants.defaultCurrency,
-                    decimalDigits: 0,
+                    decimalDigits: centerAmount % 1 == 0 ? 0 : 2,
                   ).format(centerAmount),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,

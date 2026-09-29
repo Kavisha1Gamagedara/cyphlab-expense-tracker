@@ -290,7 +290,7 @@ class AnalyticsScreen extends StatelessWidget {
                             subValue: topCategoryAmount > 0
                                 ? NumberFormat.currency(
                                     symbol: AppConstants.defaultCurrency,
-                                    decimalDigits: 0,
+                                    decimalDigits: topCategoryAmount % 1 == 0 ? 0 : 2,
                                   ).format(topCategoryAmount)
                                 : null,
                             icon: topCategoryAmount > 0
@@ -462,7 +462,11 @@ class AnalyticsScreen extends StatelessWidget {
   void _showSetBudgetDialog(BuildContext context, ExpenseProvider provider) {
     final currentBudget = provider.currentMonthBudget;
     final controller = TextEditingController(
-      text: currentBudget != null && currentBudget > 0 ? currentBudget.toStringAsFixed(0) : '',
+      text: currentBudget != null && currentBudget > 0
+          ? (currentBudget % 1 == 0
+              ? currentBudget.toStringAsFixed(0)
+              : currentBudget.toStringAsFixed(2))
+          : '',
     );
 
     showDialog(
@@ -504,7 +508,7 @@ class AnalyticsScreen extends StatelessWidget {
                 labelText: 'Budget Amount',
                 prefixText: '${AppConstants.defaultCurrency} ',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                hintText: 'e.g. 500',
+                hintText: 'e.g. 500.00',
               ),
             ),
           ],
@@ -516,21 +520,23 @@ class AnalyticsScreen extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () async {
-              final text = controller.text.trim();
+              final text = controller.text.trim().replaceAll(',', '.');
               if (text.isEmpty) return;
               final parsed = double.tryParse(text);
               if (parsed != null && parsed >= 0) {
                 Navigator.of(ctx).pop();
                 await provider.setMonthlyBudget(parsed);
                 if (context.mounted) {
+                  final budgetDisplay = parsed % 1 == 0 ? parsed.toStringAsFixed(0) : parsed.toStringAsFixed(2);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
                         parsed > 0
-                            ? 'Budget target of ${AppConstants.defaultCurrency}${parsed.toStringAsFixed(0)} saved!'
+                            ? 'Budget target of ${AppConstants.defaultCurrency}$budgetDisplay saved!'
                             : 'Budget limit cleared.',
                       ),
                       behavior: SnackBarBehavior.floating,
+                      duration: const Duration(seconds: 3),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       backgroundColor: AppColors.success,
                     ),
