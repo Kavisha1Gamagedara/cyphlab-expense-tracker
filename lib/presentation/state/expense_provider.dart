@@ -197,6 +197,10 @@ class ExpenseProvider extends ChangeNotifier {
     return map;
   }
 
+  /// Get total spending for a specific category in the selected month
+  double categoryTotal(String category) =>
+      monthCategoryBreakdown[category] ?? 0.0;
+
   /// Breakdown of totals grouped by category for current filtered expenses
   Map<String, double> get categoryBreakdown {
     final map = <String, double>{};
