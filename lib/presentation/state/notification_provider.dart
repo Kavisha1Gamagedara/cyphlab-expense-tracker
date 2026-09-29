@@ -185,31 +185,4 @@ class NotificationProvider extends ChangeNotifier {
       channelDescription: 'Warnings about items approaching deletion',
     );
   }
-
-  /// Trigger a test notification
-  Future<bool> sendTestNotification({
-    required String title,
-    required String body,
-  }) async {
-    await _notificationService.requestPermissions();
-    await _notificationService.showNotification(
-      id: 9999,
-      title: title,
-      body: body,
-      channelId: 'test_channel',
-      channelName: 'Test Notifications',
-    );
-    return true;
-  }
-
-  /// Schedule a quick test notification in [seconds] to verify background scheduler
-  Future<void> scheduleTestTimer(int seconds, {required String title, required String body}) async {
-    await _notificationService.requestPermissions();
-    await _notificationService.scheduleNotificationInSeconds(
-      id: 9998,
-      title: title,
-      body: body,
-      seconds: seconds,
-    );
-  }
 }

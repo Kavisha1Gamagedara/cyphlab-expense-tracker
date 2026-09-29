@@ -65,16 +65,6 @@ class FakeNotificationService extends NotificationService {
 
   @override
   bool isScheduledForToday(int hour, int minute) => true;
-
-  @override
-  Future<void> scheduleNotificationInSeconds({
-    required int id,
-    required String title,
-    required String body,
-    required int seconds,
-  }) async {
-    scheduledNotifications.add({'id': id, 'title': title, 'seconds': seconds});
-  }
 }
 
 void main() {

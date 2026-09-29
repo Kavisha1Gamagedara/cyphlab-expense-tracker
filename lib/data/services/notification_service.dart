@@ -281,62 +281,6 @@ class NotificationService {
     }
   }
 
-  /// Schedule a one-time test notification in [seconds] seconds
-  Future<void> scheduleNotificationInSeconds({
-    required int id,
-    required String title,
-    required String body,
-    required int seconds,
-  }) async {
-    if (!_isInitialized) await initialize();
-
-    final scheduledDate = tz.TZDateTime.now(tz.local).add(Duration(seconds: seconds));
-
-    const androidDetails = AndroidNotificationDetails(
-      'daily_reminders',
-      'Daily Reminders',
-      channelDescription: 'Test notifications',
-      importance: Importance.max,
-      priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
-      playSound: true,
-      enableVibration: true,
-    );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    final details = NotificationDetails(android: androidDetails, iOS: iosDetails);
-
-    try {
-      await _notificationsPlugin.cancel(id: id);
-
-      bool canExact = true;
-      if (defaultTargetPlatform == TargetPlatform.android) {
-        final androidPlugin = _notificationsPlugin
-            .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-        canExact = (await androidPlugin?.canScheduleExactNotifications()) ?? false;
-      }
-
-      await _notificationsPlugin.zonedSchedule(
-        id: id,
-        title: title,
-        body: body,
-        scheduledDate: scheduledDate,
-        notificationDetails: details,
-        androidScheduleMode: canExact
-            ? AndroidScheduleMode.exactAllowWhileIdle
-            : AndroidScheduleMode.inexactAllowWhileIdle,
-      );
-      debugPrint('[NotificationService] Scheduled test notification in $seconds seconds at $scheduledDate');
-    } catch (e) {
-      debugPrint('[NotificationService] scheduleNotificationInSeconds error: $e');
-    }
-  }
-
   /// Calculate next instance of a specific hour:minute in the local timezone
   tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);

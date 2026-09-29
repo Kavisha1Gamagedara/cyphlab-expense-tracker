@@ -3,7 +3,7 @@ class AppTranslations {
   static const Map<String, Map<String, String>> _localizedValues = {
     'en': {
       // General & Actions
-      'app_name': 'Trace Expense Tracker',
+      'app_name': 'TRACE',
       'settings': 'Settings',
       'language': 'Language',
       'language_subtitle': 'Choose your preferred language',
@@ -99,7 +99,7 @@ class AppTranslations {
       'biometric_lock': 'Biometric App Lock',
       'biometric_lock_subtitle': 'Protect your finances with fingerprint, Face ID, or PIN',
       'biometric_not_supported': 'Biometric authentication is not supported or set up on this device.',
-      'biometric_auth_reason': 'Authenticate to unlock Expense Tracker',
+      'biometric_auth_reason': 'Authenticate to unlock TRACE',
       'biometric_enable_reason': 'Confirm your identity to enable Biometric Lock',
       'biometric_disable_reason': 'Confirm your identity to disable Biometric Lock',
       'biometric_auth_failed': 'Authentication failed. Please try again.',
@@ -253,7 +253,7 @@ class AppTranslations {
       'biometric_lock': 'ඇඟිලි සලකුණු / මුහුණු අගුල',
       'biometric_lock_subtitle': 'ඇඟිලි සලකුණ, Face ID හෝ PIN මඟින් යෙදුම ආරක්ෂා කරන්න',
       'biometric_not_supported': 'මෙම දුරකථනයේ ජෛවමිතික ආරක්ෂාව සහාය නොදක්වයි හෝ සකසා නැත.',
-      'biometric_auth_reason': 'Expense Tracker වෙත පිවිසීමට තහවුරු කරන්න',
+      'biometric_auth_reason': 'TRACE වෙත පිවිසීමට තහවුරු කරන්න',
       'biometric_enable_reason': 'ජෛවමිතික අගුල සක්‍රිය කිරීමට ඔබගේ අනන්‍යතාවය තහවුරු කරන්න',
       'biometric_disable_reason': 'ජෛවමිතික අගුල අක්‍රිය කිරීමට ඔබගේ අනන්‍යතාවය තහවුරු කරන්න',
       'biometric_auth_failed': 'තහවුරු කිරීම අසාර්ථක විය. නැවත උත්සාහ කරන්න.',

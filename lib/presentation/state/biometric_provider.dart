@@ -76,7 +76,7 @@ class BiometricProvider extends ChangeNotifier {
 
   /// Authenticate the user. Returns true if successful.
   Future<bool> authenticate({
-    String localizedReason = 'Authenticate to access Expense Tracker',
+    String localizedReason = 'Authenticate to access TRACE',
   }) async {
     if (_isAuthenticating) return false;
 
