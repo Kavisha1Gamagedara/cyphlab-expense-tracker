@@ -7,6 +7,7 @@ import '../../data/models/expense_model.dart';
 import '../state/auth_provider.dart';
 import '../state/expense_provider.dart';
 import '../state/language_provider.dart';
+import '../widgets/budget_settings_sheet.dart';
 import '../widgets/calendar_selector_sheet.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_state.dart';
@@ -86,90 +87,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _showSetBudgetDialog(BuildContext context, ExpenseProvider provider) {
-    final currentBudget = provider.currentMonthBudget;
-    final lang = context.read<LanguageProvider>();
-    final controller = TextEditingController(
-      text: currentBudget != null && currentBudget > 0
-          ? (currentBudget % 1 == 0
-              ? currentBudget.toStringAsFixed(0)
-              : currentBudget.toStringAsFixed(2))
-          : '',
-    );
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.savings_rounded,
-                color: AppColors.primary,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(lang.getText('monthly_target')),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${DateFormat('MMMM yyyy').format(provider.selectedMonth)} ${lang.getText('set_spending_limit')}:',
-              style: const TextStyle(fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              autofocus: true,
-              decoration: InputDecoration(
-                prefixText: '${AppConstants.defaultCurrency} ',
-                hintText: 'e.g. 1500.00',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          if (currentBudget != null && currentBudget > 0)
-            TextButton(
-              onPressed: () async {
-                await provider.setMonthlyBudget(0);
-                if (ctx.mounted) Navigator.of(ctx).pop();
-              },
-              child: Text(
-                lang.getText('remove_limit'),
-                style: const TextStyle(color: AppColors.error),
-              ),
-            ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(lang.getText('cancel')),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final text = controller.text.trim().replaceAll(',', '.');
-              final val = double.tryParse(text) ?? 0;
-              await provider.setMonthlyBudget(val);
-              if (ctx.mounted) Navigator.of(ctx).pop();
-            },
-            child: Text(lang.getText('save')),
-          ),
-        ],
-      ),
+    BudgetSettingsSheet.show(
+      context,
+      initialCategory:
+          provider.selectedCategory == 'All' ? null : provider.selectedCategory,
     );
   }
 
@@ -204,7 +125,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ? provider.selectedDateTotal
                 : provider.selectedMonthTotal;
 
-            final double? rawBudget = provider.currentMonthBudget;
+            final double? rawBudget = provider.selectedCategory == 'All'
+                ? provider.currentMonthBudget
+                : provider.getCategoryBudget(provider.selectedCategory);
             final bool hasBudget = rawBudget != null && rawBudget > 0;
             final double budget = rawBudget ?? 0.0;
             final double budgetRemaining = budget - totalSpent;

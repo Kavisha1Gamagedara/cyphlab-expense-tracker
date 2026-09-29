@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import '../../data/models/budget_model.dart';
 import '../../data/models/expense_model.dart';
 import '../../data/services/firebase_service.dart';
 
@@ -9,8 +10,8 @@ class ExpenseProvider extends ChangeNotifier {
   StreamSubscription<List<Expense>>? _expenseSubscription;
 
   List<Expense> _expenses = [];
-  Map<String, double> _budgets = {}; // 'yyyy_MM' -> budget
-  StreamSubscription<Map<String, double>>? _budgetSubscription;
+  Map<String, MonthBudgetData> _budgets = {}; // 'yyyy_MM' -> MonthBudgetData
+  StreamSubscription<Map<String, MonthBudgetData>>? _budgetSubscription;
   bool _isLoading = false;
   String? _errorMessage;
   String _selectedCategory = 'All';
@@ -44,8 +45,38 @@ class ExpenseProvider extends ChangeNotifier {
   String get _currentMonthKey =>
       '${_selectedMonth.year}_${_selectedMonth.month.toString().padLeft(2, '0')}';
 
+  /// Budget data (overall + category targets) for the selected month
+  MonthBudgetData get currentMonthBudgetData =>
+      _budgets[_currentMonthKey] ?? const MonthBudgetData();
+
   /// Budget limit for the currently selected month (or null if none set)
-  double? get currentMonthBudget => _budgets[_currentMonthKey];
+  double? get currentMonthBudget {
+    final b = _budgets[_currentMonthKey];
+    if (b == null || b.totalBudget <= 0) return null;
+    return b.totalBudget;
+  }
+
+  /// Map of category budgets for the currently selected month
+  Map<String, double> get currentMonthCategoryBudgets =>
+      currentMonthBudgetData.categoryBudgets;
+
+  /// Get spending limit for a specific category in the selected month
+  double? getCategoryBudget(String category) =>
+      currentMonthBudgetData.getCategoryBudget(category);
+
+  /// Check if the currently filtered category has its own budget limit
+  bool get hasSelectedCategoryBudget {
+    if (_selectedCategory == 'All') return currentMonthBudget != null;
+    return getCategoryBudget(_selectedCategory) != null;
+  }
+
+  /// Active budget limit depending on current filter (Overall if All, or Category limit)
+  double? get activeContextBudget {
+    if (_selectedCategory != 'All') {
+      return getCategoryBudget(_selectedCategory);
+    }
+    return currentMonthBudget;
+  }
 
   /// Total days in the selected month
   int get daysInSelectedMonth => DateTime(
@@ -221,7 +252,7 @@ class ExpenseProvider extends ChangeNotifier {
     }
   }
 
-  /// Set or update the budget limit for the selected month
+  /// Set or update the overall budget limit for the selected month
   Future<bool> setMonthlyBudget(double amount) async {
     try {
       await _firebaseService.setBudget(
@@ -229,7 +260,8 @@ class ExpenseProvider extends ChangeNotifier {
         month: _selectedMonth.month,
         amount: amount,
       );
-      _budgets[_currentMonthKey] = amount;
+      final current = _budgets[_currentMonthKey] ?? const MonthBudgetData();
+      _budgets[_currentMonthKey] = current.copyWith(totalBudget: amount);
       notifyListeners();
       return true;
     } catch (e) {
@@ -237,6 +269,35 @@ class ExpenseProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  /// Set or update a category-specific spending limit for the selected month
+  Future<bool> setCategoryBudget(String category, double amount) async {
+    try {
+      await _firebaseService.setCategoryBudget(
+        year: _selectedMonth.year,
+        month: _selectedMonth.month,
+        category: category,
+        amount: amount,
+      );
+      final current = _budgets[_currentMonthKey] ?? const MonthBudgetData();
+      final updatedCategories = Map<String, double>.from(current.categoryBudgets);
+      if (amount <= 0) {
+        updatedCategories.remove(category);
+      } else {
+        updatedCategories[category] = amount;
+      }
+      _budgets[_currentMonthKey] = current.copyWith(categoryBudgets: updatedCategories);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('[ExpenseProvider] Error setting category budget: $e');
+      return false;
+    }
+  }
+
+  /// Remove a category-specific spending limit
+  Future<bool> removeCategoryBudget(String category) =>
+      setCategoryBudget(category, 0);
 
   /// Set category filter
   void setSelectedCategory(String category) {
