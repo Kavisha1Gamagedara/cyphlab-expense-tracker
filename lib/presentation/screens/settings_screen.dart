@@ -6,6 +6,7 @@ import '../state/biometric_provider.dart';
 import '../state/currency_provider.dart';
 import '../state/expense_provider.dart';
 import '../state/language_provider.dart';
+import '../state/notification_provider.dart';
 import '../state/theme_provider.dart';
 import '../widgets/currency_picker_sheet.dart';
 import '../widgets/export_report_sheet.dart';
@@ -66,6 +67,7 @@ class SettingsScreen extends StatelessWidget {
     final currencyProvider = context.watch<CurrencyProvider>();
     final auth = context.watch<AuthProvider>();
     final bio = context.watch<BiometricProvider>();
+    final notif = context.watch<NotificationProvider>();
     final expenseProvider = context.watch<ExpenseProvider>();
     final user = auth.user;
 
@@ -165,7 +167,20 @@ class SettingsScreen extends StatelessWidget {
 
           const SizedBox(height: 28),
 
-          // 5. Data & Management Section
+          // 5. Notifications & Alerts Section
+          _buildSectionHeader(
+            theme: theme,
+            title: lang.getText('notifications'),
+            subtitle: lang.getText('notifications_subtitle'),
+            icon: Icons.notifications_active_rounded,
+            iconColor: const Color(0xFFF59E0B),
+          ),
+          const SizedBox(height: 12),
+          _buildNotificationCard(context, lang, notif, isDark, theme),
+
+          const SizedBox(height: 28),
+
+          // 6. Data & Management Section
           _buildSectionHeader(
             theme: theme,
             title: lang.getText('data_management'),
@@ -1187,6 +1202,333 @@ class SettingsScreen extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  /// Notifications & Alerts Card with master toggle, daily reminder timer, budget warnings, and test alert
+  Widget _buildNotificationCard(
+    BuildContext context,
+    LanguageProvider lang,
+    NotificationProvider notif,
+    bool isDark,
+    ThemeData theme,
+  ) {
+    final reminderFormatted = notif.reminderTime.format(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // 1. Master Toggle (Enable All Notifications)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white10
+                        : const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.notifications_active_rounded,
+                      size: 22,
+                      color: Color(0xFFF59E0B),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        lang.getText('enable_notifications'),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15.5,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        lang.getText('enable_notifications_desc'),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white60 : Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Switch.adaptive(
+                  value: notif.isNotificationsEnabled,
+                  activeTrackColor: const Color(0xFFF59E0B),
+                  onChanged: (value) async {
+                    final granted = await notif.setNotificationsEnabled(value);
+                    if (value && !granted && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(lang.getText('notification_permission_denied')),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          // If notifications master toggle is ON, show sub-options
+          if (notif.isNotificationsEnabled) ...[
+            const Divider(height: 1, indent: 70),
+
+            // 2. Daily Reminder Toggle
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white10
+                          : const Color(0xFF8B5CF6).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.alarm_rounded,
+                        size: 20,
+                        color: Color(0xFF8B5CF6),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          lang.getText('daily_reminder'),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          lang.getText('daily_reminder_desc'),
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: isDark ? Colors.white60 : Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Switch.adaptive(
+                    value: notif.isDailyReminderEnabled,
+                    activeTrackColor: const Color(0xFF8B5CF6),
+                    onChanged: (val) {
+                      notif.setDailyReminderEnabled(
+                        val,
+                        title: lang.getText('daily_reminder_title'),
+                        body: lang.getText('daily_reminder_body'),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            // 3. Set Timer for Daily Reminder (Time Picker)
+            if (notif.isDailyReminderEnabled) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(72, 0, 18, 14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.05)
+                        : Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white10
+                          : Colors.black.withValues(alpha: 0.05),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.schedule_rounded,
+                        size: 18,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              lang.getText('reminder_time'),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isDark ? Colors.white54 : Colors.grey.shade600,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              reminderFormatted,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        icon: const Icon(Icons.edit_calendar_rounded, size: 14),
+                        label: Text(
+                          lang.getText('change_time'),
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                        ),
+                        onPressed: () async {
+                          final picked = await showTimePicker(
+                            context: context,
+                            initialTime: notif.reminderTime,
+                          );
+                          if (picked != null && context.mounted) {
+                            await notif.setReminderTime(
+                              picked,
+                              title: lang.getText('daily_reminder_title'),
+                              body: lang.getText('daily_reminder_body'),
+                            );
+                            if (context.mounted) {
+                              final isToday = notif.isReminderToday;
+                              final scheduleWhen = isToday ? 'Today' : 'Tomorrow';
+                              ScaffoldMessenger.of(context).clearSnackBars();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      const Icon(Icons.check_circle_outline_rounded,
+                                          color: Colors.white, size: 20),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          'Daily reminder set for ${picked.format(context)} ($scheduleWhen)',
+                                          style: const TextStyle(fontWeight: FontWeight.w600),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 3),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14)),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+
+            const Divider(height: 1, indent: 70),
+
+            // 4. Budget Warning Alerts Toggle
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white10
+                          : AppColors.error.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.warning_amber_rounded,
+                        size: 20,
+                        color: AppColors.error,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          lang.getText('budget_alerts'),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          lang.getText('budget_alerts_desc'),
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: isDark ? Colors.white60 : Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Switch.adaptive(
+                    value: notif.isBudgetAlertsEnabled,
+                    activeTrackColor: AppColors.error,
+                    onChanged: (val) => notif.setBudgetAlertsEnabled(val),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+          ],
+        ],
       ),
     );
   }

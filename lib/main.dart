@@ -13,6 +13,7 @@ import 'presentation/state/biometric_provider.dart';
 import 'presentation/state/currency_provider.dart';
 import 'presentation/state/expense_provider.dart';
 import 'presentation/state/language_provider.dart';
+import 'presentation/state/notification_provider.dart';
 import 'presentation/state/theme_provider.dart';
 
 void main() async {
@@ -67,6 +68,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => LanguageProvider(widget.prefs)),
         ChangeNotifierProvider(create: (_) => CurrencyProvider(widget.prefs)),
         ChangeNotifierProvider.value(value: _biometricProvider),
+        ChangeNotifierProvider(create: (_) => NotificationProvider(widget.prefs)),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ExpenseProvider()),
       ],

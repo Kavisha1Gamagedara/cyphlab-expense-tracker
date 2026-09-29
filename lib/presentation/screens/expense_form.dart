@@ -3,7 +3,10 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../../data/models/expense_model.dart';
+import '../state/currency_provider.dart';
 import '../state/expense_provider.dart';
+import '../state/language_provider.dart';
+import '../state/notification_provider.dart';
 
 /// Form screen / bottom sheet to Add or Edit an Expense with full validation.
 class ExpenseForm extends StatefulWidget {
@@ -96,6 +99,49 @@ class _ExpenseFormState extends State<ExpenseForm> {
     if (mounted) {
       setState(() => _isSubmitting = false);
       if (success) {
+        // Trigger Budget Warning Notification if thresholds crossed (80% or 100%)
+        try {
+          final notif = context.read<NotificationProvider>();
+          final lang = context.read<LanguageProvider>();
+          final currency = context.read<CurrencyProvider>().symbol;
+
+          // 1. Check Category Limit
+          final catBudget = provider.getCategoryBudget(_selectedCategory);
+          if (catBudget != null && catBudget > 0) {
+            final catSpent = provider.categoryTotal(_selectedCategory);
+            if (catSpent >= catBudget) {
+              notif.sendBudgetAlert(
+                title: lang.getText('budget_exceeded_title'),
+                body: '$_selectedCategory ${lang.getText('budget_exceeded_category_body')} ($currency${catSpent.toStringAsFixed(2)} / $currency${catBudget.toStringAsFixed(2)})',
+              );
+            } else if (catSpent >= catBudget * 0.8) {
+              notif.sendBudgetAlert(
+                title: lang.getText('budget_warning_80_title'),
+                body: '$_selectedCategory ${lang.getText('budget_warning_category_body')} ($currency${catSpent.toStringAsFixed(2)} / $currency${catBudget.toStringAsFixed(2)})',
+              );
+            }
+          }
+
+          // 2. Check Overall Monthly Limit
+          final overallBudget = provider.currentMonthBudget;
+          if (overallBudget != null && overallBudget > 0) {
+            final totalSpent = provider.selectedMonthTotal;
+            if (totalSpent >= overallBudget) {
+              notif.sendBudgetAlert(
+                title: lang.getText('budget_exceeded_title'),
+                body: '${lang.getText('budget_exceeded_overall_body')} ($currency${totalSpent.toStringAsFixed(2)} / $currency${overallBudget.toStringAsFixed(2)})',
+              );
+            } else if (totalSpent >= overallBudget * 0.8) {
+              notif.sendBudgetAlert(
+                title: lang.getText('budget_warning_80_title'),
+                body: '${lang.getText('budget_warning_overall_body')} ($currency${totalSpent.toStringAsFixed(2)} / $currency${overallBudget.toStringAsFixed(2)})',
+              );
+            }
+          }
+        } catch (e) {
+          debugPrint('[ExpenseForm] Budget notification error: $e');
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_isEditing ? 'Expense updated' : 'Expense saved'),
@@ -152,6 +198,17 @@ class _ExpenseFormState extends State<ExpenseForm> {
       if (mounted) {
         setState(() => _isSubmitting = false);
         if (success) {
+          try {
+            final notif = context.read<NotificationProvider>();
+            final lang = context.read<LanguageProvider>();
+            notif.sendRecycleBinWarning(
+              title: lang.getText('recycle_bin_warning_title'),
+              body: '1 ${lang.getText('recycle_bin_warning_body')}',
+            );
+          } catch (e) {
+            debugPrint('[ExpenseForm] Recycle bin alert error: $e');
+          }
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Expense moved to Recycle Bin (kept for 5 days)'),

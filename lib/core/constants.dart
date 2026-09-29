@@ -6,6 +6,11 @@ class AppConstants {
   static const String appLogo = 'assets/images/logo.png';
   static const String expensesCollection = 'expenses';
   static const String biometricLockKey = 'biometric_lock_enabled';
+  static const String notificationsEnabledKey = 'notifications_enabled';
+  static const String dailyReminderEnabledKey = 'notifications_daily_reminder_enabled';
+  static const String dailyReminderHourKey = 'notifications_daily_reminder_hour';
+  static const String dailyReminderMinuteKey = 'notifications_daily_reminder_minute';
+  static const String budgetAlertsEnabledKey = 'notifications_budget_alerts_enabled';
   static String currencySymbol = '\$';
   static String get defaultCurrency => currencySymbol;
 
