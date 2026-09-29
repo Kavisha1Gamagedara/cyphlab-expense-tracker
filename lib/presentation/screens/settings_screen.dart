@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../state/auth_provider.dart';
+import '../state/biometric_provider.dart';
 import '../state/currency_provider.dart';
 import '../state/expense_provider.dart';
 import '../state/language_provider.dart';
@@ -64,6 +65,7 @@ class SettingsScreen extends StatelessWidget {
     final themeProvider = context.watch<ThemeProvider>();
     final currencyProvider = context.watch<CurrencyProvider>();
     final auth = context.watch<AuthProvider>();
+    final bio = context.watch<BiometricProvider>();
     final expenseProvider = context.watch<ExpenseProvider>();
     final user = auth.user;
 
@@ -150,7 +152,20 @@ class SettingsScreen extends StatelessWidget {
 
           const SizedBox(height: 28),
 
-          // 4. Data & Management Section
+          // 4. Security & Biometrics Section
+          _buildSectionHeader(
+            theme: theme,
+            title: lang.getText('security'),
+            subtitle: lang.getText('biometric_lock_subtitle'),
+            icon: Icons.shield_rounded,
+            iconColor: const Color(0xFF10B981),
+          ),
+          const SizedBox(height: 12),
+          _buildSecurityCard(context, lang, bio, isDark, theme),
+
+          const SizedBox(height: 28),
+
+          // 5. Data & Management Section
           _buildSectionHeader(
             theme: theme,
             title: lang.getText('data_management'),
@@ -986,6 +1001,192 @@ class SettingsScreen extends StatelessWidget {
             style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Security Card with Biometric Lock toggle
+  Widget _buildSecurityCard(
+    BuildContext context,
+    LanguageProvider lang,
+    BiometricProvider bio,
+    bool isDark,
+    ThemeData theme,
+  ) {
+    final isSupported = bio.isDeviceSupported;
+    final isFace = bio.hasFace && !bio.hasFingerprint;
+    final iconData = isFace ? Icons.face_unlock_rounded : Icons.fingerprint_rounded;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                // Icon badge
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white10
+                        : const Color(0xFF10B981).withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Icon(
+                      iconData,
+                      size: 24,
+                      color: const Color(0xFF10B981),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+
+                // Title & Subtitle
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        lang.getText('biometric_lock'),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        lang.getText('biometric_lock_subtitle'),
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: isDark ? Colors.white60 : Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                // Switch
+                Switch.adaptive(
+                  value: bio.isBiometricEnabled,
+                  activeTrackColor: const Color(0xFF10B981),
+                  onChanged: isSupported
+                      ? (value) async {
+                          final reasonKey = value
+                              ? 'biometric_enable_reason'
+                              : 'biometric_disable_reason';
+                          final success = await bio.toggleBiometricLock(
+                            enable: value,
+                            promptReason: lang.getText(reasonKey),
+                          );
+
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).clearSnackBars();
+                            if (success) {
+                              final msgKey = value
+                                  ? 'biometric_lock_enabled_msg'
+                                  : 'biometric_lock_disabled_msg';
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      const Icon(Icons.check_circle_outline_rounded,
+                                          color: Colors.white, size: 20),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          lang.getText(msgKey),
+                                          style: const TextStyle(fontWeight: FontWeight.w600),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 2),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14)),
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      const Icon(Icons.error_outline_rounded,
+                                          color: Colors.white, size: 20),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          lang.getText('biometric_auth_failed'),
+                                          style: const TextStyle(fontWeight: FontWeight.w600),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  backgroundColor: AppColors.error,
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 2),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14)),
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      : null,
+                ),
+              ],
+            ),
+
+            if (!isSupported) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline_rounded,
+                        size: 16, color: AppColors.warning),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        lang.getText('biometric_not_supported'),
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.warning,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
