@@ -93,6 +93,23 @@ class AppTranslations {
       'app_version': 'Version 1.0.0',
       'developed_with_love': 'Crafted with Flutter & Firebase',
       'language_applied_notice': 'Language changed to English successfully',
+
+      // Security & Biometric Lock
+      'security': 'Security',
+      'biometric_lock': 'Biometric App Lock',
+      'biometric_lock_subtitle': 'Protect your finances with fingerprint, Face ID, or PIN',
+      'biometric_not_supported': 'Biometric authentication is not supported or set up on this device.',
+      'biometric_auth_reason': 'Authenticate to unlock Expense Tracker',
+      'biometric_enable_reason': 'Confirm your identity to enable Biometric Lock',
+      'biometric_disable_reason': 'Confirm your identity to disable Biometric Lock',
+      'biometric_auth_failed': 'Authentication failed. Please try again.',
+      'biometric_lock_enabled_msg': 'Biometric lock enabled successfully',
+      'biometric_lock_disabled_msg': 'Biometric lock disabled',
+      'unlock_app': 'Unlock App',
+      'app_locked': 'App Locked',
+      'touch_sensor_to_unlock': 'Use fingerprint, Face ID, or device passcode to unlock.',
+      'unlock_now': 'Unlock Now',
+      'switch_account': 'Switch Account / Log Out',
       
       // Categories
       'cat_food': 'Food & Dining',
@@ -200,6 +217,23 @@ class AppTranslations {
       'app_version': 'අනුවාදය 1.0.0',
       'developed_with_love': 'Flutter සහ Firebase මඟින් නිර්මාණය කර ඇත',
       'language_applied_notice': 'භාෂාව සිංහලට සාර්ථකව මාරු කරන ලදී',
+
+      // Security & Biometric Lock
+      'security': 'ආරක්ෂාව',
+      'biometric_lock': 'ඇඟිලි සලකුණු / මුහුණු අගුල',
+      'biometric_lock_subtitle': 'ඇඟිලි සලකුණ, Face ID හෝ PIN මඟින් යෙදුම ආරක්ෂා කරන්න',
+      'biometric_not_supported': 'මෙම දුරකථනයේ ජෛවමිතික ආරක්ෂාව සහාය නොදක්වයි හෝ සකසා නැත.',
+      'biometric_auth_reason': 'Expense Tracker වෙත පිවිසීමට තහවුරු කරන්න',
+      'biometric_enable_reason': 'ජෛවමිතික අගුල සක්‍රිය කිරීමට ඔබගේ අනන්‍යතාවය තහවුරු කරන්න',
+      'biometric_disable_reason': 'ජෛවමිතික අගුල අක්‍රිය කිරීමට ඔබගේ අනන්‍යතාවය තහවුරු කරන්න',
+      'biometric_auth_failed': 'තහවුරු කිරීම අසාර්ථක විය. නැවත උත්සාහ කරන්න.',
+      'biometric_lock_enabled_msg': 'ජෛවමිතික අගුල සාර්ථකව සක්‍රිය කරන ලදී',
+      'biometric_lock_disabled_msg': 'ජෛවමිතික අගුල අක්‍රිය කරන ලදී',
+      'unlock_app': 'යෙදුම අගුළු හරින්න',
+      'app_locked': 'යෙදුම අගුළු දමා ඇත',
+      'touch_sensor_to_unlock': 'අගුළු හැරීමට ඇඟිලි සලකුණ, Face ID හෝ PIN භාවිතා කරන්න.',
+      'unlock_now': 'දැන් අගුළු හරින්න',
+      'switch_account': 'වෙනත් ගිණුමකට මාරු වන්න / ඉවත් වන්න',
       
       // Categories
       'cat_food': 'ආහාර සහ පාන',
